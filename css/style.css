@@ -779,6 +779,36 @@ html[data-theme="moon"] .menu-art {
 .preset-chip:hover { border-color: var(--gf-color); background: var(--gf-color-soft); }
 .create-hint { min-height: 18px; margin-top: 10px; font-size: 12px; color: var(--text-dim); letter-spacing: .3px; }
 .create-hint.error { color: var(--danger); }
+
+/* 头像选择器 */
+.avatar-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.avatar-option {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  transition: border-color .15s, transform .12s;
+}
+.avatar-option img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.avatar-option:hover { transform: scale(1.06); }
+.avatar-option.selected { border-color: var(--gf-color); box-shadow: 0 0 0 3px var(--gf-color-soft); }
+.avatar-option.avatar-upload {
+  border: 2px dashed var(--text-dim);
+  color: var(--text-dim);
+  border-radius: 50%;
+}
+.avatar-option.avatar-upload svg { width: 18px; height: 18px; }
+.avatar-option.avatar-upload:hover { border-color: var(--gf-color); color: var(--gf-color); }
+
+/* 字段标签行（label + 附件按钮） */
+.field-label-row { display: flex; align-items: center; justify-content: space-between; }
+.field-label-row .modal-field-label { margin: 14px 0 6px; }
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 10px; }
 .modal-buttons { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
 .backup-output {
   width: 100%;

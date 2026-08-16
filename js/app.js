@@ -34,6 +34,7 @@ const App = {
     streamSkips: 0,      // 本次流中被跨女友守卫跳过上屏的气泡数
     extracting: false,   // 喜好提取调用进行中（防并发重复提取）
     customGfs: {},       // { gfId: {…角色定义} } 用户自建角色（localStorage 持久化）
+    createAvatar: '',    // 创建向导中选中的头像 dataURL（空=生成首字头像）
   },
 
   el: {},
@@ -87,6 +88,10 @@ const App = {
       createCancelBtn: document.getElementById('create-cancel-btn'),
       createSubmitBtn: document.getElementById('create-submit-btn'),
       createHint: document.getElementById('create-hint'),
+      avatarPicker: document.getElementById('avatar-picker'),
+      createAvatarInput: document.getElementById('create-avatar-input'),
+      createAttachBtn: document.getElementById('create-attach-btn'),
+      createAttachInput: document.getElementById('create-attach-input'),
       apiBtn: document.getElementById('api-btn'),
       menuBtn: document.getElementById('menu-btn'),
       themeToggle: document.getElementById('theme-toggle'),
@@ -1152,12 +1157,15 @@ ${existing || '（暂无）'}
 
   // ═══ 创建角色（用户自建） ═══
   CUSTOM_COLORS: ['#D993B4', '#A292D9', '#E0B06C', '#8FB8C9', '#A9C0A0', '#C9A0B8', '#9AA8D0', '#D0A88F'],
+  EMOJI_AVATARS: ['🌸', '🌙', '⭐', '🍓', '🎮', '🐱', '🎧', '🌊', '🍰', '☕', '📚', '🌿', '🎀', '🔥', '🌻', '🍊'],
   openCreateModal() {
     this.el.createName.value = '';
     this.el.createDesc.value = '';
     this.el.createMaterial.value = '';
     this.el.createHint.textContent = '';
     this.el.createHint.className = 'create-hint';
+    this.state.createAvatar = '';
+    this.renderAvatarPicker();
     this.el.createOverlay.classList.remove('hidden');
     this.el.createModal.classList.remove('hidden');
     this.el.createName.focus();
@@ -1181,6 +1189,91 @@ ${existing || '（暂无）'}
     ctx.textBaseline = 'middle';
     ctx.fillText(String(name || '?').slice(0, 1), 40, 43);
     return c.toDataURL('image/png');
+  },
+  // emoji 头像：渐变圆底 + emoji（零版权素材，跨平台通用 emoji）
+  makeEmojiAvatar(emoji, color) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 80;
+    const ctx = c.getContext('2d');
+    const g = ctx.createLinearGradient(0, 0, 80, 80);
+    g.addColorStop(0, color);
+    g.addColorStop(1, this.shadeColor(color, -22));
+    ctx.beginPath();
+    ctx.arc(40, 40, 40, 0, Math.PI * 2);
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.font = '40px "Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(emoji, 40, 44);
+    return c.toDataURL('image/png');
+  },
+  shadeColor(hex, amt) {
+    const n = parseInt(hex.slice(1), 16);
+    let r = (n >> 16) + amt, g = ((n >> 8) & 0xff) + amt, b = (n & 0xff) + amt;
+    r = Math.max(0, Math.min(255, r));
+    g = Math.max(0, Math.min(255, g));
+    b = Math.max(0, Math.min(255, b));
+    return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  },
+  // 头像选择器：emoji 预设网格 + 上传自定义图片
+  renderAvatarPicker() {
+    if (!this.el.avatarPicker) return;
+    const items = this.EMOJI_AVATARS.map((em, i) => {
+      const color = this.CUSTOM_COLORS[i % this.CUSTOM_COLORS.length];
+      return `<button type="button" class="avatar-option" data-emoji="${em}" data-color="${color}" title="${em}"><img src="${this.makeEmojiAvatar(em, color)}" alt="${em}"></button>`;
+    }).join('');
+    this.el.avatarPicker.innerHTML = items + `
+      <button type="button" class="avatar-option avatar-upload" id="avatar-upload-btn" title="上传图片">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 20h16"/></svg>
+      </button>`;
+  },
+  // 上传自定义头像：压缩到 128px 存 dataURL（控制 localStorage 体积）
+  handleAvatarUpload(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const c = document.createElement('canvas');
+        const S = 128;
+        c.width = c.height = S;
+        const ctx = c.getContext('2d');
+        const scale = Math.max(S / img.width, S / img.height);
+        const w = img.width * scale, h = img.height * scale;
+        ctx.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+        this.state.createAvatar = c.toDataURL('image/jpeg', 0.85);
+        this.markAvatarSelected();
+        const ub = document.getElementById('avatar-upload-btn');
+        if (ub) ub.classList.add('selected');
+        this.toast('头像已上传');
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  },
+  markAvatarSelected() {
+    document.querySelectorAll('.avatar-option').forEach(o => o.classList.remove('selected'));
+  },
+  // 附件：读取文本类文件，追加进补充素材
+  handleAttachFiles(files) {
+    if (!files || !files.length) return;
+    let pending = files.length;
+    let total = '';
+    for (const f of files) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const head = '\n\n【附件：' + f.name + '】\n';
+        total += head + String(reader.result || '').slice(0, 8000);   // 单附件截断，防素材过长
+        pending--;
+        if (pending === 0) {
+          this.el.createMaterial.value = (this.el.createMaterial.value + total).trim();
+          this.toast('已添加 ' + files.length + ' 个附件到素材');
+        }
+      };
+      reader.onerror = () => { pending--; };
+      reader.readAsText(f);
+    }
   },
   parseRoleJson(text) {
     let t = String(text || '').trim();
@@ -1226,7 +1319,7 @@ ${existing || '（暂无）'}
         name: data.name,
         tag: data.tag || '自定义角色',
         color: color,
-        avatar: this.makeInitialAvatar(data.name, color),
+        avatar: this.state.createAvatar || this.makeInitialAvatar(data.name, color),
         status: '在线',
         greeting: data.greeting || ('你好呀，我是' + data.name + '。'),
         profile: {
@@ -1465,6 +1558,25 @@ ${existing || '（暂无）'}
     this.el.createCancelBtn.addEventListener('click', () => this.closeCreateModal());
     this.el.createOverlay.addEventListener('click', () => this.closeCreateModal());
     this.el.createSubmitBtn.addEventListener('click', () => this.createCharacter());
+    // 头像选择：emoji 点击选中 / 上传按钮
+    this.el.avatarPicker.addEventListener('click', (e) => {
+      const opt = e.target.closest('.avatar-option');
+      if (!opt) return;
+      if (opt.id === 'avatar-upload-btn') { this.el.createAvatarInput.click(); return; }
+      this.state.createAvatar = this.makeEmojiAvatar(opt.dataset.emoji, opt.dataset.color);
+      this.markAvatarSelected();
+      opt.classList.add('selected');
+    });
+    this.el.createAvatarInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) this.handleAvatarUpload(e.target.files[0]);
+      e.target.value = '';
+    });
+    // 附件：文本类文件追加进素材
+    this.el.createAttachBtn.addEventListener('click', () => this.el.createAttachInput.click());
+    this.el.createAttachInput.addEventListener('change', (e) => {
+      this.handleAttachFiles(e.target.files);
+      e.target.value = '';
+    });
     // 快捷示例：点击填入描述
     document.addEventListener('click', (e) => {
       const chip = e.target.closest('.preset-chip');

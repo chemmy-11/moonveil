@@ -6,8 +6,8 @@
   <title>月见 · 三个女朋友</title>
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=1.5.2">
-  <link rel="stylesheet" href="css/mobile.css?v=1.5.2">
+  <link rel="stylesheet" href="css/style.css?v=1.5.3">
+  <link rel="stylesheet" href="css/mobile.css?v=1.5.3">
 </head>
 <body>
 
@@ -143,6 +143,9 @@
   <p class="modal-desc">告诉 AI「TA 是谁、什么性格、怎么说话」，它会把 TA 变成一位能聊天的角色。<b>描述越具体，TA 越像。</b></p>
   <label class="modal-field-label" for="create-name">角色名 <em class="req">*</em></label>
   <input type="text" id="create-name" placeholder="给 TA 起个名字，如：林夏、阿澈…">
+  <label class="modal-field-label">头像</label>
+  <div class="avatar-picker" id="avatar-picker"><!-- 由 js 渲染：emoji 头像 + 上传自定义图片 --></div>
+  <input type="file" id="create-avatar-input" accept="image/*" style="display:none">
   <label class="modal-field-label" for="create-desc">描述 TA <em class="req">*</em></label>
   <textarea id="create-desc" placeholder="TA 是什么身份、什么性格、说话什么风格？&#10;如：温柔冷静的图书管理员，说话轻声细语，喜欢旧书和下雨天"></textarea>
   <div class="create-presets">
@@ -154,7 +157,11 @@
       <button class="preset-chip" data-preset="冷静理性的医生，温和有距离感，偶尔冷幽默">冷静医生</button>
     </div>
   </div>
-  <label class="modal-field-label" for="create-material">补充素材（选填）</label>
+  <div class="field-label-row">
+    <label class="modal-field-label" for="create-material">补充素材（选填）</label>
+    <button class="btn secondary btn-sm" id="create-attach-btn" type="button">📎 添加附件</button>
+  </div>
+  <input type="file" id="create-attach-input" accept=".txt,.md,.json,.csv,.eml,.html,.log,.srt" multiple style="display:none">
   <textarea id="create-material" placeholder="粘贴 TA 说过的话、聊天记录、文字描述…越多越像"></textarea>
   <div class="create-hint" id="create-hint"></div>
   <div class="modal-buttons">
@@ -203,8 +210,8 @@
 <!-- ════ 轻提示 ════ -->
 <div id="toast" class="hidden"></div>
 
-<script src="js/version.js?v=1.5.2"></script>
-<script src="js/data.js?v=1.5.2"></script>
-<script src="js/app.js?v=1.5.2"></script>
+<script src="js/version.js?v=1.5.3"></script>
+<script src="js/data.js?v=1.5.3"></script>
+<script src="js/app.js?v=1.5.3"></script>
 </body>
 </html>

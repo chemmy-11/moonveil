@@ -86,6 +86,7 @@ const App = {
       createMaterial: document.getElementById('create-material'),
       createCancelBtn: document.getElementById('create-cancel-btn'),
       createSubmitBtn: document.getElementById('create-submit-btn'),
+      createHint: document.getElementById('create-hint'),
       apiBtn: document.getElementById('api-btn'),
       menuBtn: document.getElementById('menu-btn'),
       themeToggle: document.getElementById('theme-toggle'),
@@ -1155,6 +1156,8 @@ ${existing || '（暂无）'}
     this.el.createName.value = '';
     this.el.createDesc.value = '';
     this.el.createMaterial.value = '';
+    this.el.createHint.textContent = '';
+    this.el.createHint.className = 'create-hint';
     this.el.createOverlay.classList.remove('hidden');
     this.el.createModal.classList.remove('hidden');
     this.el.createName.focus();
@@ -1204,7 +1207,9 @@ ${existing || '（暂无）'}
     const btn = this.el.createSubmitBtn;
     btn.disabled = true;
     btn.style.opacity = '.55';
-    btn.textContent = '生成中…';
+    btn.textContent = '正在生成…';
+    this.el.createHint.textContent = '正在为 TA 生成人格，通常需要 20~40 秒，请稍候…';
+    this.el.createHint.className = 'create-hint';
 
     const sys = '你是角色创建师。根据用户提供的角色名、描述与素材，创建一位情感陪伴角色，输出严格 JSON（不要 markdown 代码块）：\n{"name":"角色名","tag":"一句话标签（身份·性格）","greeting":"开场白（第一人称，符合角色，一句）","signature":"个性签名（一句）","bio":"角色简介（2-3句）","prompt":"完整人格 prompt"}\n\nprompt 字段必须包含这些章节（中文，结构参考）：\n# {name} — 记忆与人格\n你是{name}。{身份背景，自然交代}。\n## Layer 0：核心性格（最高优先级，2-4 条性格底色）\n## Layer 1：身份\n## Layer 2：表达风格（口头禅、说话方式；消息模式：像发微信，一次 1-3 条短消息换行分隔）\n## Layer 3：情感逻辑（开心/不开心/被冷落时分别怎么表现）\n## Layer 4：关系行为（对正在聊天的人）\n## Layer 5：边界与雷区\n## 记忆协议\n当这轮对话让你了解到对方的新偏好时，在回复最后一行追加【喜好：以「他」开头简短概括】。\n\n硬约束：全程无任何成人/性内容；说话自然、有辨识度、不 AI 腔、不总结。';
     const user = '角色名：' + name + '\n描述：' + (desc || '（无）') + '\n素材：' + (material || '（无）');
@@ -1245,9 +1250,10 @@ ${existing || '（暂无）'}
       this.toast('角色「' + gf.name + '」创建成功');
     } catch (e) {
       console.error('[createCharacter]', e);
-      this.toast(e.message === 'bad parse'
-        ? '生成失败：AI 返回格式异常，请重试'
-        : '生成失败：网络似乎不太稳定，稍后再试');
+      this.el.createHint.textContent = e.message === 'bad parse'
+        ? '生成结果格式异常，已保留你的输入，点「生成角色」重试一次即可'
+        : '网络似乎不太稳定，输入已保留，请再点一次「生成角色」';
+      this.el.createHint.className = 'create-hint error';
     } finally {
       btn.disabled = false;
       btn.style.opacity = '';
@@ -1459,6 +1465,14 @@ ${existing || '（暂无）'}
     this.el.createCancelBtn.addEventListener('click', () => this.closeCreateModal());
     this.el.createOverlay.addEventListener('click', () => this.closeCreateModal());
     this.el.createSubmitBtn.addEventListener('click', () => this.createCharacter());
+    // 快捷示例：点击填入描述
+    document.addEventListener('click', (e) => {
+      const chip = e.target.closest('.preset-chip');
+      if (chip) {
+        this.el.createDesc.value = chip.dataset.preset;
+        this.el.createDesc.focus();
+      }
+    });
 
     // API Key
     this.el.apiBtn.addEventListener('click', () => this.openApiModal());

@@ -79,9 +79,14 @@ const App = {
       menuPanel: document.getElementById('menu-panel'),
       menuOverlay: document.getElementById('menu-overlay'),
       menuTheme: document.getElementById('menu-theme'),
+      menuMonitor: document.getElementById('menu-monitor'),
       menuApi: document.getElementById('menu-api'),
       menuClear: document.getElementById('menu-clear'),
       menuUpdate: document.getElementById('menu-update'),
+      monitorOverlay: document.getElementById('monitor-overlay'),
+      monitorPanel: document.getElementById('monitor-panel'),
+      monitorClose: document.getElementById('monitor-close'),
+      monitorFrame: document.getElementById('monitor-frame'),
       updateOverlay: document.getElementById('update-overlay'),
       updateModal: document.getElementById('update-modal'),
       updateDesc: document.getElementById('update-desc'),
@@ -1130,8 +1135,30 @@ ${existing || '（暂无）'}
 
   // ═══ 菜单面板 ═══
   toggleMenu(show) {
+    // 「记忆监视」仅在配置了记忆后端时可见
+    if (this.el.menuMonitor) {
+      this.el.menuMonitor.style.display = localStorage.getItem('ebbingflow_endpoint') ? '' : 'none';
+    }
     this.el.menuPanel.classList.toggle('hidden', !show);
     this.el.menuOverlay.classList.toggle('hidden', !show);
+  },
+
+  // ═══ 记忆监视（内嵌 EbbingFlow Data Monitor）═══
+  openMonitor() {
+    const backend = (localStorage.getItem('ebbingflow_endpoint') || '').trim().replace(/\/+$/, '');
+    if (!backend) {
+      this.toast('请先在 API Key 设置中配置记忆后端地址');
+      this.openApiModal();
+      return;
+    }
+    this.el.monitorFrame.src = backend + '/monitor?v=moonveil1.3.1';   // cache-bust：防浏览器缓存旧监视页
+    this.el.monitorOverlay.classList.remove('hidden');
+    this.el.monitorPanel.classList.remove('hidden');
+  },
+  closeMonitor() {
+    this.el.monitorOverlay.classList.add('hidden');
+    this.el.monitorPanel.classList.add('hidden');
+    this.el.monitorFrame.src = '';   // 卸载页面，停止 ws 推送
   },
 
   // ═══ 事件绑定 ═══
@@ -1174,6 +1201,7 @@ ${existing || '（暂无）'}
     this.el.menuBtn.addEventListener('click', () => this.toggleMenu(true));
     this.el.menuOverlay.addEventListener('click', () => this.toggleMenu(false));
     this.el.menuTheme.addEventListener('click', () => { this.toggleTheme(); this.toggleMenu(false); });
+    this.el.menuMonitor.addEventListener('click', () => { this.toggleMenu(false); this.openMonitor(); });
     this.el.menuUpdate.addEventListener('click', () => { this.toggleMenu(false); this.checkUpdate(); });
     this.el.menuBackup.addEventListener('click', () => { this.toggleMenu(false); this.openBackup(); });
     this.el.menuApi.addEventListener('click', () => { this.toggleMenu(false); this.openApiModal(); });
@@ -1207,6 +1235,10 @@ ${existing || '（暂无）'}
     this.el.gfInfo.addEventListener('click', () => this.openProfile());
     this.el.profileClose.addEventListener('click', () => this.closeProfile());
     this.el.profileOverlay.addEventListener('click', () => this.closeProfile());
+
+    // 记忆监视
+    this.el.monitorClose.addEventListener('click', () => this.closeMonitor());
+    this.el.monitorOverlay.addEventListener('click', () => this.closeMonitor());
   },
 };
 

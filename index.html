@@ -6,8 +6,8 @@
   <title>月见 · 三个女朋友</title>
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=1.3.0">
-  <link rel="stylesheet" href="css/mobile.css?v=1.3.0">
+  <link rel="stylesheet" href="css/style.css?v=1.3.1">
+  <link rel="stylesheet" href="css/mobile.css?v=1.3.1">
 </head>
 <body>
 
@@ -97,6 +97,7 @@
   <div class="menu-art"></div>
   <div class="panel-title">菜单</div>
   <button class="menu-item" id="menu-theme">🌓 主题：珍珠潮汐</button>
+  <button class="menu-item" id="menu-monitor">📊 记忆监视</button>
   <button class="menu-item" id="menu-update">🔄 检查更新</button>
   <button class="menu-item" id="menu-backup">🗂 存档管理</button>
   <button class="menu-item" id="menu-api">🔑 设置 API Key</button>
@@ -147,11 +148,21 @@
   <button class="btn secondary" id="backup-copy-btn" style="display:none; width: 100%; margin-top: 10px;">📋 复制存档</button>
 </div>
 
+<!-- ════ 记忆监视（EbbingFlow Data Monitor 内嵌） ════ -->
+<div id="monitor-overlay" class="overlay hidden"></div>
+<div id="monitor-panel" class="monitor-panel hidden">
+  <div class="monitor-bar">
+    <span class="monitor-title">📊 记忆监视 · EbbingFlow</span>
+    <button class="profile-close" id="monitor-close" aria-label="关闭">✕</button>
+  </div>
+  <iframe id="monitor-frame" src="" title="记忆监视"></iframe>
+</div>
+
 <!-- ════ 轻提示 ════ -->
 <div id="toast" class="hidden"></div>
 
-<script src="js/version.js?v=1.3.0"></script>
-<script src="js/data.js?v=1.3.0"></script>
-<script src="js/app.js?v=1.3.0"></script>
+<script src="js/version.js?v=1.3.1"></script>
+<script src="js/data.js?v=1.3.1"></script>
+<script src="js/app.js?v=1.3.1"></script>
 </body>
 </html>

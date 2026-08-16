@@ -707,6 +707,38 @@ html[data-theme="moon"] .menu-art {
 .btn:hover { filter: brightness(1.05); }
 .btn:active { transform: scale(.97); }
 
+/* ─── 记忆监视（EbbingFlow Data Monitor 内嵌） ─── */
+.monitor-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+.monitor-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.monitor-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  color: var(--text-main);
+}
+#monitor-frame {
+  flex: 1;
+  border: none;
+  width: 100%;
+  background: var(--bg);
+}
+
 /* ─── Toast ─── */
 #toast {
   position: fixed;

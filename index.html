@@ -6,8 +6,8 @@
   <title>月见 · 三个女朋友</title>
   <link rel="icon" type="image/png" href="assets/icons/favicon.png">
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-  <link rel="stylesheet" href="css/style.css?v=1.5.3">
-  <link rel="stylesheet" href="css/mobile.css?v=1.5.3">
+  <link rel="stylesheet" href="css/style.css?v=1.5.4">
+  <link rel="stylesheet" href="css/mobile.css?v=1.5.4">
 </head>
 <body>
 
@@ -149,7 +149,6 @@
   <label class="modal-field-label" for="create-desc">描述 TA <em class="req">*</em></label>
   <textarea id="create-desc" placeholder="TA 是什么身份、什么性格、说话什么风格？&#10;如：温柔冷静的图书管理员，说话轻声细语，喜欢旧书和下雨天"></textarea>
   <div class="create-presets">
-    <span class="preset-label">没有灵感？点一个参考：</span>
     <div class="preset-chips">
       <button class="preset-chip" data-preset="温柔治愈的花店店主，说话轻声细语，记得每一件小事">温柔花店店主</button>
       <button class="preset-chip" data-preset="傲娇毒舌的独立游戏开发者，嘴硬心软，关心藏在嫌弃里">傲娇游戏开发者</button>
@@ -159,7 +158,7 @@
   </div>
   <div class="field-label-row">
     <label class="modal-field-label" for="create-material">补充素材（选填）</label>
-    <button class="btn secondary btn-sm" id="create-attach-btn" type="button">📎 添加附件</button>
+    <button class="attach-plus" id="create-attach-btn" type="button" title="添加附件"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
   </div>
   <input type="file" id="create-attach-input" accept=".txt,.md,.json,.csv,.eml,.html,.log,.srt" multiple style="display:none">
   <textarea id="create-material" placeholder="粘贴 TA 说过的话、聊天记录、文字描述…越多越像"></textarea>
@@ -210,8 +209,8 @@
 <!-- ════ 轻提示 ════ -->
 <div id="toast" class="hidden"></div>
 
-<script src="js/version.js?v=1.5.3"></script>
-<script src="js/data.js?v=1.5.3"></script>
-<script src="js/app.js?v=1.5.3"></script>
+<script src="js/version.js?v=1.5.4"></script>
+<script src="js/data.js?v=1.5.4"></script>
+<script src="js/app.js?v=1.5.4"></script>
 </body>
 </html>

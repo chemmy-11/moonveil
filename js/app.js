@@ -1556,7 +1556,9 @@ ${existing || '（暂无）'}
 
     // 创建角色
     this.el.createCancelBtn.addEventListener('click', () => this.closeCreateModal());
-    this.el.createOverlay.addEventListener('click', () => this.closeCreateModal());
+    this.el.createOverlay.addEventListener('click', (e) => {
+      if (e.target === this.el.createOverlay) this.closeCreateModal();  // 仅点遮罩关闭，点弹窗内容不关
+    });
     this.el.createSubmitBtn.addEventListener('click', () => this.createCharacter());
     // 头像选择：emoji 点击选中 / 上传按钮
     this.el.avatarPicker.addEventListener('click', (e) => {

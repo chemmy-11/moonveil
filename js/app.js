@@ -119,6 +119,8 @@ const App = {
     };
   },
 
+  THEME_ICON_SVG: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6"/></svg>',
+
   // ═══ 主题 ═══
   // 三主题循环：珍珠潮汐(light) → 海港(harbor) → 星河(moon)
   THEMES: {
@@ -132,7 +134,7 @@ const App = {
     if (!this.THEMES[saved]) saved = 'light';   // 兼容旧值/未知值
     document.documentElement.setAttribute('data-theme', saved);
     const name = this.THEMES[saved];
-    this.el.menuTheme.textContent = '🌓 主题：' + name;
+    this.el.menuTheme.innerHTML = '<span class="mi-icon">' + this.THEME_ICON_SVG + '</span>主题：' + this.esc(name);
     this.el.themeToggle.title = '切换主题（当前：' + name + '）';
   },
   toggleTheme() {
@@ -400,14 +402,19 @@ const App = {
     if (hist.length === 0) {
       // 首次进入：女友发来开场白
       const gf = GIRLFRIENDS[this.state.currentGf];
-      hist.push({ role: 'gf', text: gf.greeting });
+      hist.push({ role: 'gf', text: gf.greeting, ts: Date.now() });
       this.state.histories[this.state.currentGf] = hist;
       this.saveHistory(this.state.currentGf);
       this.appendMessage('gf', gf.greeting);
       this.updateApiStatus();
       return;
     }
+    let lastTs = 0;
     for (const m of hist) {
+      // 时间分隔条：距上一条 ≥5 分钟才显示（仅历史渲染；实时消息靠 sendMessage 里的同款逻辑）
+      const ts = m.ts || 0;
+      if (ts && ts - lastTs >= 5 * 60 * 1000) this.appendTimeDivider(ts);
+      if (ts) lastTs = ts;
       if (m.role === 'gf') {
         // 同一次回复的多个气泡（\n 分隔）拆成多条渲染
         for (const seg of m.text.split('\n')) {
@@ -418,6 +425,29 @@ const App = {
       }
     }
     this.scrollToBottom(false);
+  },
+
+  // ═══ 时间分隔条（≥5 分钟间隔显示，淡雅小字） ═══
+  appendTimeDivider(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const hm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    let label;
+    if (d.toDateString() === now.toDateString()) {
+      label = hm;
+    } else if (Date.now() - ts < 7 * 864e5) {
+      label = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()] === undefined ? hm :
+        '周' + ['日', '一', '二', '三', '四', '五', '六'][d.getDay()] + ' ' + hm;
+    } else {
+      label = (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm;
+    }
+    const wrap = document.createElement('div');
+    wrap.className = 'msg time-divider';
+    const el = document.createElement('div');
+    el.className = 'time-divider-text';
+    el.textContent = label;
+    wrap.appendChild(el);
+    this.el.dialogueArea.appendChild(wrap);
   },
 
   // ═══ 追加消息气泡 ═══
@@ -466,6 +496,7 @@ const App = {
     const gf = GIRLFRIENDS[gfId || this.state.currentGf];
     if (!gf || gf.id !== this.state.currentGf) return;   // 已切走：不显示指示器
     this.state.typingActive = true;
+    this.el.body.classList.add('waiting');     // 发送按钮呼吸微光
     const area = this.el.dialogueArea;
     const wrap = document.createElement('div');
     wrap.className = 'msg gf';
@@ -486,6 +517,7 @@ const App = {
     this.state.typingActive = false;
     const t = document.getElementById('typing-indicator');
     if (t) t.remove();
+    this.el.body.classList.remove('waiting');   // 停止发送按钮呼吸微光
   },
 
   // ═══ 发送（流式：智能拆条 + 逐条延迟上屏，像真人微信聊天） ═══
@@ -504,8 +536,12 @@ const App = {
     this.el.playerInput.value = '';
     this.autoResizeInput();
 
-    // 乐观上屏
-    this.state.histories[gfId].push({ role: 'player', text });
+    // 乐观上屏（先判断是否需要时间分隔条）
+    const now = Date.now();
+    const histArr = this.state.histories[gfId];
+    const prevTs = histArr.length ? (histArr[histArr.length - 1].ts || 0) : 0;
+    if (now - prevTs >= 5 * 60 * 1000) this.appendTimeDivider(now);
+    histArr.push({ role: 'player', text, ts: now });
     this.saveHistory(gfId);
     this.appendMessage('player', text);
     this.playSound();
@@ -617,7 +653,7 @@ const App = {
       .map(b => this.stripFavTags(gfId, b))
       .filter(b => b.trim());
     if (clean.length) {
-      this.state.histories[gfId].push({ role: 'gf', text: clean.join('\n') });
+      this.state.histories[gfId].push({ role: 'gf', text: clean.join('\n'), ts: Date.now() });
       this.saveHistory(gfId);
     }
   },
@@ -1165,7 +1201,7 @@ ${existing || '（暂无）'}
       </div>` : `
       <div class="profile-card">
         <div class="profile-card-title">我们的回忆</div>
-        <div class="profile-placeholder">还没有值得记住的回忆，一起创造吧…</div>
+        <div class="profile-placeholder">·  ·  ·<br>还没有值得记住的回忆<br>说过的真心话、纪念的日子，会在这里亮起来</div>
       </div>`;
     const favCard = favs.length ? `
       <div class="profile-card">
@@ -1176,7 +1212,7 @@ ${existing || '（暂无）'}
       </div>` : `
       <div class="profile-card">
         <div class="profile-card-title">她的喜好</div>
-        <div class="profile-placeholder">还没发现你的小癖好，聊着聊着就有了…</div>
+        <div class="profile-placeholder">（ ᐛ ）<br>她还没透露过喜欢什么<br>多陪她聊聊，这里会慢慢长出小标签</div>
       </div>`;
 
     this.el.profileBody.innerHTML = `

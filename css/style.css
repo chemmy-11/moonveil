@@ -4,6 +4,14 @@
    ═══════════════════════════════════════════════════════════ */
 
 /* ─── 设计令牌 ─── */
+/* 女友气泡手写字体（霞鹜文楷·子集 288KB，聊天"人味"；仅用于 gf 气泡） */
+@font-face {
+  font-family: 'LXGW WenKai Chat';
+  src: url('../assets/fonts/lxgw-subset.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+
 :root {
   /* 珍珠潮汐（默认浅色主题）— 珍珠白雾蓝底 */
   --bg: #F4F6F8;
@@ -285,12 +293,16 @@ body {
   border: none;
   border-radius: 12px;
   background: transparent;
-  font-size: 17px;
   cursor: pointer;
-  transition: background .18s, transform .12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);           /* 线性图标随主题色 */
+  transition: background .18s, color .18s, transform .12s;
 }
-.icon-btn:hover { background: var(--gf-color-soft); }
-.icon-btn:active { transform: scale(.9); background: var(--gf-color-soft); }
+.icon-btn svg { width: 19px; height: 19px; }
+.icon-btn:hover { background: var(--gf-color-soft); color: var(--gf-color); }
+.icon-btn:active { transform: scale(.9); }
 
 /* ─── 主布局 ─── */
 .main-layout {
@@ -445,6 +457,7 @@ body {
   border-radius: var(--radius-bubble);
   border-top-left-radius: 5px;      /* 柔化小尾巴 */
   box-shadow: var(--shadow-tiny);
+  font-family: 'LXGW WenKai Chat', var(--font);   /* 手写感：她说话的字迹 */
 }
 
 .msg.player .msg-text {
@@ -465,6 +478,19 @@ body {
   padding: 7px 16px;
   backdrop-filter: blur(8px);
   letter-spacing: .4px;
+}
+
+/* ─── 时间分隔条（≥5 分钟间隔） ─── */
+.msg.time-divider { justify-content: center; margin: 10px 0 14px; }
+.time-divider-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 1px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 3px 12px;
+  backdrop-filter: blur(8px);
 }
 
 .msg { animation: msg-appear .28s cubic-bezier(.22, .9, .36, 1); }
@@ -538,6 +564,12 @@ body {
 #send-btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
 #send-btn:active { transform: scale(.96); }
 #send-btn:disabled { opacity: .55; cursor: not-allowed; }
+/* 呼吸微光：等待回复时柔和提示（body.waiting 类由 JS 控制） */
+body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
+@keyframes send-glow {
+  0%, 100% { box-shadow: 0 4px 14px var(--gf-color-soft); }
+  50% { box-shadow: 0 4px 22px var(--gf-color), 0 0 0 4px var(--gf-color-soft); }
+}
 
 /* ─── 底部导航（仅移动端显示） ─── */
 #mobile-bottom-nav { display: none; }
@@ -599,7 +631,9 @@ html[data-theme="moon"] .menu-art {
   letter-spacing: 3px;
 }
 .menu-item {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   text-align: left;
   border: none;
@@ -612,8 +646,20 @@ html[data-theme="moon"] .menu-art {
   cursor: pointer;
   transition: background .18s;
 }
+.menu-item .mi-icon {
+  flex: none;
+  display: inline-flex;
+  width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-dim);
+}
+.menu-item .mi-icon svg { width: 17px; height: 17px; }
 .menu-item:hover { background: var(--bg-soft); }
+.menu-item:hover .mi-icon { color: var(--gf-color); }
 .menu-item.danger { color: var(--danger); }
+.menu-item.danger .mi-icon { color: var(--danger); }
 .menu-item.dim { color: var(--text-dim); cursor: default; }
 .menu-item.dim:hover { background: transparent; }
 
@@ -900,8 +946,9 @@ html[data-theme="moon"] .menu-art {
   font-size: 12.5px;
   color: var(--text-dim);
   text-align: center;
-  padding: 18px 0 6px;
+  padding: 20px 0 10px;
   letter-spacing: .5px;
+  line-height: 1.9;
 }
 
 /* ─── 回忆时间线（自动提取的重要回忆） ─── */

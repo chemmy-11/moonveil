@@ -9,6 +9,11 @@ export JAVA_HOME="${JAVA_HOME:-C:/Program Files/Java/jdk-17}"
 export PATH="$JAVA_HOME/bin:$PATH"
 
 echo "==> 1/6 同步 www（根目录 → www/）"
+# 静态资源版本号以 js/version.js 为唯一源头，自动同步到 index.html 的 cache-bust query
+JS_VER=$(sed -n "s/.*APP_VERSION = '\([^']*\)'.*/\1/p" js/version.js)
+if [ -n "$JS_VER" ]; then
+  sed -i -E "s/\?v=[0-9][0-9a-zA-Z.]*\"/?v=$JS_VER\"/g; s/monitor\?v=moonveil[0-9a-zA-Z.]*'/monitor?v=moonveil$JS_VER'/" index.html
+fi
 mkdir -p www
 cp index.html www/index.html
 cp -r css/. www/css/

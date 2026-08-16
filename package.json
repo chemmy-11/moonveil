@@ -5,7 +5,8 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "build": "node scripts/build.js"
+    "build": "node scripts/build.js",
+    "dev": "node scripts/dev-server.js"
   },
   "dependencies": {
     "@capacitor/android": "^6.2.1",
@@ -16,5 +17,8 @@
     "@capacitor/keyboard": "^6.0.4",
     "@capacitor/status-bar": "^6.0.3",
     "@capgo/capacitor-updater": "^6.50.2"
+  },
+  "devDependencies": {
+    "http-proxy": "^1.18.1"
   }
 }

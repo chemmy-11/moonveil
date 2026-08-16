@@ -1097,7 +1097,8 @@ ${existing || '（暂无）'}
   // 「🔗 连接后端」一键连通 EbbingFlow（默认 http://localhost:8000），
   // 校验 /health 通过后写入配置；失败给出明确提示。
   async connectBackend() {
-    const DEFAULT_BACKEND = 'http://localhost:8000';
+    // 默认同源：配合 scripts/dev-server.js 反向代理，月见与后端/监视页同端口
+    const DEFAULT_BACKEND = (window.location.origin || 'http://localhost:8080').replace(/\/+$/, '');
     const input = this.el.memoryBackendInput.value.trim().replace(/\/+$/, '');
     const addr = input || DEFAULT_BACKEND;
     if (!input) this.el.memoryBackendInput.value = DEFAULT_BACKEND;
@@ -1112,7 +1113,10 @@ ${existing || '（暂无）'}
       localStorage.setItem('ebbingflow_endpoint', addr);
       this.updateBackendStatus();
       this.updateApiStatus();
-      this.toast('已连接记忆后端：' + addr);
+      this.closeApiModal();
+      this.toast('已连接记忆后端');
+      // 连接成功后直接弹出监视页面
+      this.openMonitor();
     } catch (e) {
       console.error('[connectBackend]', e);
       this.el.backendStatusText.textContent = '连接失败，请确认后端已启动（docker compose up -d）';
@@ -1517,7 +1521,7 @@ ${existing || '（暂无）'}
       this.openApiModal();
       return;
     }
-    this.el.monitorFrame.src = backend + '/monitor?v=moonveil1.3.2';   // cache-bust：防浏览器缓存旧监视页
+    this.el.monitorFrame.src = backend + '/monitor?v=' + Date.now();   // cache-bust：防浏览器缓存旧监视页
     this.el.monitorOverlay.classList.remove('hidden');
     this.el.monitorPanel.classList.remove('hidden');
   },

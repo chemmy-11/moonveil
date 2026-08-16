@@ -688,6 +688,8 @@ html[data-theme="moon"] .menu-art {
 }
 .modal {
   width: min(400px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-lg);
@@ -756,7 +758,9 @@ html[data-theme="moon"] .menu-art {
   border-color: var(--gf-color);
   box-shadow: 0 0 0 3px var(--gf-color-soft);
 }
+#create-desc { min-height: 96px; }
 #create-material { min-height: 96px; }
+#create-modal .modal-buttons { justify-content: space-between; }
 .modal-field-label .req { color: var(--danger); font-style: normal; }
 .create-presets { margin: 12px 0 2px; }
 .preset-label { font-size: 11.5px; color: var(--text-dim); display: block; margin-bottom: 7px; letter-spacing: .3px; }

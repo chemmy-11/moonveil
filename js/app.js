@@ -71,6 +71,10 @@ const App = {
       apiModal: document.getElementById('api-modal'),
       apiKeyInput: document.getElementById('api-key-input'),
       memoryBackendInput: document.getElementById('memory-backend-input'),
+      backendConnectBtn: document.getElementById('backend-connect-btn'),
+      backendDisconnectBtn: document.getElementById('backend-disconnect-btn'),
+      backendStatusText: document.getElementById('backend-status-text'),
+      backendStatusLine: document.getElementById('backend-status-line'),
       apiSaveBtn: document.getElementById('api-save-btn'),
       apiSkipBtn: document.getElementById('api-skip-btn'),
       apiBtn: document.getElementById('api-btn'),
@@ -961,6 +965,7 @@ ${existing || '（暂无）'}
     if (backend) this.el.memoryBackendInput.value = backend;
     this.el.apiModal.classList.remove('hidden');
     this.el.apiKeyInput.focus();
+    this.updateBackendStatus();
   },
   closeApiModal() {
     this.el.apiModal.classList.add('hidden');
@@ -986,6 +991,69 @@ ${existing || '（暂无）'}
     if (t) t.textContent = hasKey ? 'API Key 已配置 ✓' : (hasBackend ? '记忆后端已配置 ✓' : 'API Key 未配置');
     const row = document.getElementById('api-status-row');
     if (row) row.style.color = (hasKey || hasBackend) ? 'var(--ok-color)' : '';
+    this.updateBackendStatus();
+  },
+
+  // ═══ 记忆后端连接 ═══
+  // 「🔗 连接后端」一键连通 EbbingFlow（默认 http://localhost:8000），
+  // 校验 /health 通过后写入配置；失败给出明确提示。
+  async connectBackend() {
+    const DEFAULT_BACKEND = 'http://localhost:8000';
+    const input = this.el.memoryBackendInput.value.trim().replace(/\/+$/, '');
+    const addr = input || DEFAULT_BACKEND;
+    if (!input) this.el.memoryBackendInput.value = DEFAULT_BACKEND;
+    this.el.backendStatusText.textContent = '连接中…';
+    this.el.backendStatusText.className = 'backend-status';
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 6000);
+      const resp = await fetch(addr + '/health', { signal: controller.signal });
+      clearTimeout(timeout);
+      if (!resp.ok) throw new Error('HTTP ' + resp.status);
+      localStorage.setItem('ebbingflow_endpoint', addr);
+      this.updateBackendStatus();
+      this.updateApiStatus();
+      this.toast('已连接记忆后端：' + addr);
+    } catch (e) {
+      console.error('[connectBackend]', e);
+      this.el.backendStatusText.textContent = '连接失败，请确认后端已启动（docker compose up -d）';
+      this.el.backendStatusText.className = 'backend-status failed';
+      this.toast('连接失败：后端未响应');
+    }
+  },
+  disconnectBackend() {
+    localStorage.removeItem('ebbingflow_endpoint');
+    this.updateBackendStatus();
+    this.updateApiStatus();
+    this.toast('已断开记忆后端，恢复内置记忆');
+  },
+  updateBackendStatus() {
+    const backend = localStorage.getItem('ebbingflow_endpoint');
+    const connected = !!backend;
+    const line = this.el.backendStatusLine;
+    if (line) {
+      line.textContent = connected ? '🔗 记忆后端：已连接' : '🔗 记忆后端：未连接';
+      const row = document.getElementById('backend-status-row');
+      if (row) row.style.color = connected ? 'var(--ok-color)' : '';
+    }
+    if (this.el.backendStatusText) {
+      if (connected) {
+        this.el.backendStatusText.textContent = '已连接 ✓ ' + backend;
+        this.el.backendStatusText.className = 'backend-status connected';
+      } else {
+        this.el.backendStatusText.textContent = '未连接（点左侧按钮一键连接）';
+        this.el.backendStatusText.className = 'backend-status';
+      }
+    }
+    // 连接/断开互斥：已连接禁用连接按钮，未连接禁用断开按钮
+    if (this.el.backendConnectBtn) {
+      this.el.backendConnectBtn.disabled = connected;
+      this.el.backendConnectBtn.style.opacity = connected ? '.5' : '';
+    }
+    if (this.el.backendDisconnectBtn) {
+      this.el.backendDisconnectBtn.disabled = !connected;
+      this.el.backendDisconnectBtn.style.opacity = !connected ? '.5' : '';
+    }
   },
 
   // ═══ 输入框自动伸缩 + IME 处理 ═══
@@ -1151,7 +1219,7 @@ ${existing || '（暂无）'}
       this.openApiModal();
       return;
     }
-    this.el.monitorFrame.src = backend + '/monitor?v=moonveil1.3.1';   // cache-bust：防浏览器缓存旧监视页
+    this.el.monitorFrame.src = backend + '/monitor?v=moonveil1.3.2';   // cache-bust：防浏览器缓存旧监视页
     this.el.monitorOverlay.classList.remove('hidden');
     this.el.monitorPanel.classList.remove('hidden');
   },
@@ -1193,6 +1261,9 @@ ${existing || '（暂无）'}
     this.el.apiKeyInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.handleApiKeySave();
     });
+    // 记忆后端连接
+    this.el.backendConnectBtn.addEventListener('click', () => this.connectBackend());
+    this.el.backendDisconnectBtn.addEventListener('click', () => this.disconnectBackend());
 
     // 主题
     this.el.themeToggle.addEventListener('click', () => this.toggleTheme());

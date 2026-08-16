@@ -758,6 +758,7 @@ html[data-theme="moon"] .menu-art {
   border-color: var(--gf-color);
   box-shadow: 0 0 0 3px var(--gf-color-soft);
 }
+#create-modal { width: min(560px, calc(100vw - 48px)); }
 #create-desc { min-height: 96px; }
 #create-material { min-height: 96px; }
 #create-modal .modal-buttons { justify-content: space-between; }

@@ -108,9 +108,10 @@
 <div id="api-modal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-title">配置 DeepSeek API Key</div>
-    <p class="modal-desc">三位女友的对话由 DeepSeek 大模型实时生成。Key 只保存在你的浏览器本地，不会上传到任何服务器。</p>
+    <p class="modal-desc">三位女友的对话由 DeepSeek 大模型实时生成。Key 只保存在你的浏览器本地，不会上传到任何服务器。<br>可选：填写 EbbingFlow 记忆后端地址，把长期记忆交给它管理（留空则使用内置记忆）。</p>
     <!-- type=text + text-security：Android 不触发安全键盘（方便粘贴 API Key），仍以圆点遮挡 -->
     <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <input type="text" id="memory-backend-input" placeholder="记忆后端地址（可选，如 http://localhost:8000）" autocomplete="off" spellcheck="false">
     <div class="modal-buttons">
       <button class="btn secondary" id="api-skip-btn">跳过</button>
       <button class="btn primary" id="api-save-btn">保存</button>

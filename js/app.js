@@ -70,6 +70,7 @@ const App = {
       apiStatusText: document.getElementById('api-status-text'),
       apiModal: document.getElementById('api-modal'),
       apiKeyInput: document.getElementById('api-key-input'),
+      memoryBackendInput: document.getElementById('memory-backend-input'),
       apiSaveBtn: document.getElementById('api-save-btn'),
       apiSkipBtn: document.getElementById('api-skip-btn'),
       apiBtn: document.getElementById('api-btn'),
@@ -844,10 +845,14 @@ ${existing || '（暂无）'}
     if (hadQueued) this.renderHistory();
   },
 
-  // ═══ LLM 调用（DeepSeek 直连 · SSE 流式） ═══
+  // ═══ LLM 调用（DeepSeek 直连 · SSE 流式）═══
+  // 可选记忆后端（EbbingFlow）：配置 ebbingflow_endpoint 后，
+  // 主聊天改走 EbbingFlow 的 OpenAI 兼容接口（user 字段区分三位女友的独立记忆库）；
+  // 记忆提取类辅助调用（smallLLMCall）始终直连 DeepSeek，避免污染后端记忆。
   async callLLM(systemPrompt, gfId, userMessage, onDelta) {
     const cfg = LLM_CONFIG;
-    const apiKey = localStorage.getItem('deepseek_api_key');
+    const backend = (localStorage.getItem('ebbingflow_endpoint') || '').trim().replace(/\/+$/, '');
+    const apiKey = backend ? 'local' : localStorage.getItem('deepseek_api_key');
     if (!apiKey) throw new Error('NO_API_KEY');
 
     // system prompt + 最近 10 轮对话 + 当前消息
@@ -867,24 +872,32 @@ ${existing || '（暂无）'}
     });
     messages.push({ role: 'user', content: userMessage });
 
+    const endpoint = backend ? backend + '/v1/chat/completions' : cfg.endpoint;
+    const body = {
+      model: backend ? 'ebbingflow' : cfg.model,
+      messages: messages,
+      stream: true,
+    };
+    if (backend) {
+      body.user = 'moonveil_' + gfId;   // EbbingFlow 按 user 隔离会话与记忆
+    } else {
+      body.reasoning_effort = cfg.reasoning_effort;
+      body.temperature = cfg.temperature;
+      body.max_tokens = cfg.max_tokens;
+    }
+
     const controller = new AbortController();
     this.state.activeController = controller;   // 暴露给打断逻辑
-    const timeout = setTimeout(() => controller.abort(), cfg.timeout_ms);
+    // 记忆后端内部含检索+生成，超时放宽到 90s
+    const timeout = setTimeout(() => controller.abort(), backend ? 90000 : cfg.timeout_ms);
     try {
-      const resp = await fetch(cfg.endpoint, {
+      const resp = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + apiKey,
         },
-        body: JSON.stringify({
-          model: cfg.model,
-          messages: messages,
-          reasoning_effort: cfg.reasoning_effort,
-          temperature: cfg.temperature,
-          max_tokens: cfg.max_tokens,
-          stream: true,
-        }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
       clearTimeout(timeout);
@@ -932,12 +945,15 @@ ${existing || '（暂无）'}
   // ═══ API Key ═══
   checkApiKey() {
     const key = localStorage.getItem('deepseek_api_key');
-    if (!key) this.openApiModal();
+    const backend = localStorage.getItem('ebbingflow_endpoint');
+    if (!key && !backend) this.openApiModal();
     this.updateApiStatus();
   },
   openApiModal() {
     const saved = localStorage.getItem('deepseek_api_key');
     if (saved) this.el.apiKeyInput.value = saved;
+    const backend = localStorage.getItem('ebbingflow_endpoint');
+    if (backend) this.el.memoryBackendInput.value = backend;
     this.el.apiModal.classList.remove('hidden');
     this.el.apiKeyInput.focus();
   },
@@ -946,18 +962,25 @@ ${existing || '（暂无）'}
   },
   handleApiKeySave() {
     const key = this.el.apiKeyInput.value.trim();
-    if (!key) { this.toast('Key 不能为空'); return; }
-    localStorage.setItem('deepseek_api_key', key);
+    const backend = this.el.memoryBackendInput.value.trim().replace(/\/+$/, '');
+    if (!key && !backend) { this.toast('Key 不能为空'); return; }
+    if (key) localStorage.setItem('deepseek_api_key', key);
+    // 记忆后端（可选）：EbbingFlow 地址；留空则恢复内置记忆（localStorage 提取）
+    if (backend !== localStorage.getItem('ebbingflow_endpoint')) {
+      if (backend) localStorage.setItem('ebbingflow_endpoint', backend);
+      else localStorage.removeItem('ebbingflow_endpoint');
+    }
     this.closeApiModal();
     this.updateApiStatus();
-    this.toast('API Key 已保存');
+    this.toast(backend ? 'API Key 已保存（记忆后端：' + backend + '）' : 'API Key 已保存');
   },
   updateApiStatus() {
-    const has = !!localStorage.getItem('deepseek_api_key');
+    const hasKey = !!localStorage.getItem('deepseek_api_key');
+    const hasBackend = !!localStorage.getItem('ebbingflow_endpoint');
     const t = this.el.apiStatusText;
-    if (t) t.textContent = has ? 'API Key 已配置 ✓' : 'API Key 未配置';
+    if (t) t.textContent = hasKey ? 'API Key 已配置 ✓' : (hasBackend ? '记忆后端已配置 ✓' : 'API Key 未配置');
     const row = document.getElementById('api-status-row');
-    if (row) row.style.color = has ? 'var(--ok-color)' : '';
+    if (row) row.style.color = (hasKey || hasBackend) ? 'var(--ok-color)' : '';
   },
 
   // ═══ 输入框自动伸缩 + IME 处理 ═══

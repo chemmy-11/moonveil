@@ -16,9 +16,11 @@ if [ -n "$JS_VER" ]; then
 fi
 mkdir -p www
 cp index.html www/index.html
-cp -r css/. www/css/
-cp -r js/. www/js/
-cp -r assets/. www/assets/
+# 先清空再复制，保证 www 与源码完全一致（避免残留已删除的大文件被 cap copy 打进 APK）
+rm -rf www/css www/js www/assets
+cp -r css www/css
+cp -r js www/js
+cp -r assets www/assets
 
 echo "==> 2/6 cap copy android"
 npx cap copy android

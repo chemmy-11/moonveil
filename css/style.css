@@ -386,6 +386,18 @@ body {
 .gf-card-tag { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 .gf-card.active .gf-card-tag { color: var(--text-main); }   /* 选中卡淡底上副标题加深，保可读 */
 
+/* 创建角色入口（＋） */
+.gf-card-add { opacity: .85; }
+.gf-card-add:hover { opacity: 1; background: var(--bg-soft); }
+.gf-card-avatar.avatar-add {
+  display: grid;
+  place-items: center;
+  border: 2px dashed var(--gf-color);
+  color: var(--gf-color);
+  background: var(--gf-color-soft);
+}
+.gf-card-avatar.avatar-add svg { width: 18px; height: 18px; }
+
 .sidebar-footer {
   padding: 14px 10px 4px;
   border-top: 1px solid var(--card-border);
@@ -725,6 +737,26 @@ html[data-theme="moon"] .menu-art {
   border-color: var(--gf-color);
   box-shadow: 0 0 0 3px var(--gf-color-soft);
 }
+.modal textarea {
+  width: 100%;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--input-bg);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text-main);
+  outline: none;
+  font-family: var(--font);
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 72px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.modal textarea:focus {
+  border-color: var(--gf-color);
+  box-shadow: 0 0 0 3px var(--gf-color-soft);
+}
+#create-material { min-height: 96px; }
 .modal-buttons { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
 .backup-output {
   width: 100%;

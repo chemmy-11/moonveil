@@ -33,17 +33,19 @@ const App = {
     activeStreamGf: null,  // 正在流式回复的女友 id（无则 null；切女友时据此清理队列）
     streamSkips: 0,      // 本次流中被跨女友守卫跳过上屏的气泡数
     extracting: false,   // 喜好提取调用进行中（防并发重复提取）
+    customGfs: {},       // { gfId: {…角色定义} } 用户自建角色（localStorage 持久化）
   },
 
   el: {},
 
   // ═══ 初始化（独立 try/catch，防单步失败拖垮整体） ═══
   init() {
+    try { this.loadCustomGfs(); } catch (e) { console.error('[init] loadCustomGfs', e); }
     try { this.cacheElements(); } catch (e) { console.error('[init] cacheElements', e); }
     try { this.applyTheme(); } catch (e) { console.error('[init] applyTheme', e); }
     try { this.loadAllHistories(); } catch (e) { console.error('[init] loadAllHistories', e); }
     try { this.renderGfList(); } catch (e) { console.error('[init] renderGfList', e); }
-    try { this.switchGf(Object.keys(GIRLFRIENDS)[0]); } catch (e) { console.error('[init] switchGf', e); }
+    try { this.switchGf(Object.keys(this.allGfs())[0]); } catch (e) { console.error('[init] switchGf', e); }
     try { this.bindEvents(); } catch (e) { console.error('[init] bindEvents', e); }
     try { this.checkApiKey(); } catch (e) { console.error('[init] checkApiKey', e); }
     try { this.setupKeyboardHook(); } catch (e) { console.error('[init] setupKeyboardHook', e); }
@@ -77,6 +79,13 @@ const App = {
       backendStatusLine: document.getElementById('backend-status-line'),
       apiSaveBtn: document.getElementById('api-save-btn'),
       apiSkipBtn: document.getElementById('api-skip-btn'),
+      createOverlay: document.getElementById('create-overlay'),
+      createModal: document.getElementById('create-modal'),
+      createName: document.getElementById('create-name'),
+      createDesc: document.getElementById('create-desc'),
+      createMaterial: document.getElementById('create-material'),
+      createCancelBtn: document.getElementById('create-cancel-btn'),
+      createSubmitBtn: document.getElementById('create-submit-btn'),
       apiBtn: document.getElementById('api-btn'),
       menuBtn: document.getElementById('menu-btn'),
       themeToggle: document.getElementById('theme-toggle'),
@@ -240,6 +249,7 @@ const App = {
       histories: this.state.histories,
       favs: this.state.favs,
       memories: this.state.memories,
+      customGfs: this.state.customGfs,
     };
     this.el.backupOutput.value = JSON.stringify(data);
     this.el.backupOutput.classList.remove('hidden');
@@ -274,7 +284,14 @@ const App = {
         this.state.histories = {};
         this.state.favs = {};
         this.state.memories = {};
-        for (const id of Object.keys(GIRLFRIENDS)) {
+        // 先恢复自定义角色定义（否则遍历不到存档里的自定义角色）
+        this.state.customGfs = {};
+        const cg = data.customGfs || {};
+        for (const id of Object.keys(cg)) {
+          if (cg[id] && cg[id].name && cg[id].prompt) this.state.customGfs[id] = cg[id];
+        }
+        this.saveCustomGfs();
+        for (const id of Object.keys(this.allGfs())) {
           this.state.histories[id] = Array.isArray(data.histories[id]) ? data.histories[id] : [];
           this.state.favs[id] = Array.isArray(data.favs && data.favs[id]) ? data.favs[id] : [];
           this.state.memories[id] = Array.isArray(data.memories && data.memories[id]) ? data.memories[id] : [];
@@ -282,7 +299,9 @@ const App = {
           this.saveFavs(id);
           this.saveMemories(id);
         }
-        this.renderHistory();
+        this.renderGfList();
+        if (!this.allGfs()[this.state.currentGf]) this.switchGf(Object.keys(this.allGfs())[0]);
+        else this.renderHistory();
         this.toast('存档已导入');
       } catch (e) {
         console.error('[importBackup]', e);
@@ -293,11 +312,32 @@ const App = {
   },
 
   // ═══ 持久化 ═══
+  // ── 角色：内置三位（data.js GIRLFRIENDS）+ 用户自建角色（localStorage） ──
+  allGfs() {
+    return Object.assign({}, GIRLFRIENDS, this.state.customGfs);
+  },
+  loadCustomGfs() {
+    try {
+      const raw = localStorage.getItem('aigf_custom_gfs');
+      const arr = raw ? JSON.parse(raw) : [];
+      this.state.customGfs = {};
+      for (const g of (Array.isArray(arr) ? arr : [])) {
+        if (g && g.id && g.name && g.prompt) this.state.customGfs[g.id] = g;
+      }
+    } catch (e) {
+      this.state.customGfs = {};
+    }
+  },
+  saveCustomGfs() {
+    try {
+      localStorage.setItem('aigf_custom_gfs', JSON.stringify(Object.values(this.state.customGfs)));
+    } catch (e) { console.error('[saveCustomGfs]', e); }
+  },
   histKey(id) { return 'aigf_hist_' + id; },
   favsKey(id) { return 'aigf_favs_' + id; },
   memsKey(id) { return 'aigf_mem_' + id; },
   loadAllHistories() {
-    for (const id of Object.keys(GIRLFRIENDS)) {
+    for (const id of Object.keys(this.allGfs())) {
       try {
         const raw = localStorage.getItem(this.histKey(id));
         this.state.histories[id] = raw ? JSON.parse(raw) : [];
@@ -332,7 +372,7 @@ const App = {
 
   // ═══ 角色列表渲染（侧栏 + 底部导航） ═══
   renderGfList() {
-    const listHtml = Object.values(GIRLFRIENDS).map(gf => `
+    const listHtml = Object.values(this.allGfs()).map(gf => `
       <div class="gf-card" data-gf="${gf.id}">
         <img class="gf-card-avatar" src="${gf.avatar}" alt="">
         <div>
@@ -340,9 +380,16 @@ const App = {
           <div class="gf-card-tag">${gf.tag}</div>
         </div>
       </div>`).join('');
-    this.el.gfList.innerHTML = listHtml;
+    this.el.gfList.innerHTML = listHtml + `
+      <div class="gf-card gf-card-add" id="gf-add-btn" role="button" tabindex="0">
+        <div class="gf-card-avatar avatar-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <div>
+          <div class="gf-card-name">创建角色</div>
+          <div class="gf-card-tag">自定义一位专属角色</div>
+        </div>
+      </div>`;
 
-    const navHtml = Object.values(GIRLFRIENDS).map(gf => `
+    const navHtml = Object.values(this.allGfs()).map(gf => `
       <button class="bottom-nav-item" data-gf="${gf.id}">
         <span class="bn-icon" style="background-image:url('${gf.avatar}')"><span class="bn-dot"></span></span>
         <span class="bn-label">${gf.name}</span>
@@ -352,7 +399,7 @@ const App = {
 
   // ═══ 切换女友 ═══
   switchGf(id) {
-    const gf = GIRLFRIENDS[id];
+    const gf = this.allGfs()[id];
     if (!gf) return;
     this.state.currentGf = id;
     this.state.unread[id] = 0;
@@ -401,7 +448,7 @@ const App = {
 
     if (hist.length === 0) {
       // 首次进入：女友发来开场白
-      const gf = GIRLFRIENDS[this.state.currentGf];
+      const gf = this.allGfs()[this.state.currentGf];
       hist.push({ role: 'gf', text: gf.greeting, ts: Date.now() });
       this.state.histories[this.state.currentGf] = hist;
       this.saveHistory(this.state.currentGf);
@@ -468,7 +515,7 @@ const App = {
     wrap.className = 'msg ' + (role === 'player' ? 'player' : 'gf');
 
     if (role === 'gf') {
-      const gf = GIRLFRIENDS[targetGf];
+      const gf = this.allGfs()[targetGf];
       const img = document.createElement('img');
       img.className = 'msg-avatar';
       img.src = gf.avatar;
@@ -493,7 +540,7 @@ const App = {
   // ═══ 打字指示器 ═══
   showTyping(gfId) {
     if (this.state.typingActive) return;
-    const gf = GIRLFRIENDS[gfId || this.state.currentGf];
+    const gf = this.allGfs()[gfId || this.state.currentGf];
     if (!gf || gf.id !== this.state.currentGf) return;   // 已切走：不显示指示器
     this.state.typingActive = true;
     this.el.body.classList.add('waiting');     // 发送按钮呼吸微光
@@ -552,7 +599,7 @@ const App = {
     //   → 连续标点（！！）、句末 emoji/颜文字（！✨）整体并入同一条，不再产生碎片
     // - ～…；; 等弱标点不切（语气词与颜文字的组成部分）
     // - ≥50 字强切兜底；单次回复最多 10 条，超出并入最后一条（内容不丢）
-    const gf = GIRLFRIENDS[gfId];
+    const gf = this.allGfs()[gfId];
     const bubbles = [];       // 本次回复的所有气泡文本（历史用）
     const MAX_BUBBLES = 10;
     let curSentence = '';     // 当前句子缓冲
@@ -743,7 +790,7 @@ const App = {
   // stripFavTags 剥离入库，两条通道靠条目去重保证幂等。
   async extractFavs(gfId) {
     if (this.state.extracting) return;
-    const gf = GIRLFRIENDS[gfId];
+    const gf = this.allGfs()[gfId];
     if (!gf) return;
     const hist = this.state.histories[gfId] || [];
     const existing = (this.state.favs[gfId] || []).map(f => f.text).join('\n');
@@ -799,7 +846,7 @@ const App = {
   // 否则模型会以角色口吻「回忆」并逐字摘抄日常对话，而不是做严格筛选。
   // 失败静默（网络/额度），绝不影响聊天；下次触发自动重试。
   async reviewMemories(gfId) {
-    const gf = GIRLFRIENDS[gfId];
+    const gf = this.allGfs()[gfId];
     if (!gf) return;
     const hist = this.state.histories[gfId] || [];
     const existing = (this.state.memories[gfId] || []).map(m => m.text).join('\n');
@@ -1010,6 +1057,7 @@ ${existing || '（暂无）'}
     const key = this.el.apiKeyInput.value.trim();
     const backend = this.el.memoryBackendInput.value.trim().replace(/\/+$/, '');
     if (!key && !backend) { this.toast('Key 不能为空'); return; }
+    const wasFirstKey = !localStorage.getItem('deepseek_api_key') && !!key;
     if (key) localStorage.setItem('deepseek_api_key', key);
     // 记忆后端（可选）：EbbingFlow 地址；留空则恢复内置记忆（localStorage 提取）
     if (backend !== localStorage.getItem('ebbingflow_endpoint')) {
@@ -1019,6 +1067,15 @@ ${existing || '（暂无）'}
     this.closeApiModal();
     this.updateApiStatus();
     this.toast(backend ? 'API Key 已保存（记忆后端：' + backend + '）' : 'API Key 已保存');
+    // 首次配置 API 且尚无自建角色时，询问是否创建
+    if (wasFirstKey && Object.keys(this.state.customGfs).length === 0) {
+      this.askCreateRole();
+    }
+  },
+  askCreateRole() {
+    if (confirm('要不要现在创建一位专属角色？\n（之后随时可点左侧栏的「+」创建）')) {
+      this.openCreateModal();
+    }
   },
   updateApiStatus() {
     const hasKey = !!localStorage.getItem('deepseek_api_key');
@@ -1092,6 +1149,112 @@ ${existing || '（暂无）'}
     }
   },
 
+  // ═══ 创建角色（用户自建） ═══
+  CUSTOM_COLORS: ['#D993B4', '#A292D9', '#E0B06C', '#8FB8C9', '#A9C0A0', '#C9A0B8', '#9AA8D0', '#D0A88F'],
+  openCreateModal() {
+    this.el.createName.value = '';
+    this.el.createDesc.value = '';
+    this.el.createMaterial.value = '';
+    this.el.createOverlay.classList.remove('hidden');
+    this.el.createModal.classList.remove('hidden');
+    this.el.createName.focus();
+  },
+  closeCreateModal() {
+    this.el.createOverlay.classList.add('hidden');
+    this.el.createModal.classList.add('hidden');
+  },
+  // 首字圆形头像：无素材依赖，用角色主题色画底 + 名字首字
+  makeInitialAvatar(name, color) {
+    const c = document.createElement('canvas');
+    c.width = c.height = 80;
+    const ctx = c.getContext('2d');
+    ctx.beginPath();
+    ctx.arc(40, 40, 40, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 34px -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(name || '?').slice(0, 1), 40, 43);
+    return c.toDataURL('image/png');
+  },
+  parseRoleJson(text) {
+    let t = String(text || '').trim();
+    t = t.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+    const start = t.indexOf('{');
+    const end = t.lastIndexOf('}');
+    if (start < 0 || end <= start) return null;
+    try { return JSON.parse(t.slice(start, end + 1)); }
+    catch (e) { return null; }
+  },
+  async createCharacter() {
+    const name = this.el.createName.value.trim();
+    const desc = this.el.createDesc.value.trim();
+    const material = this.el.createMaterial.value.trim();
+    if (!name) { this.toast('请先填写角色名'); return; }
+    if (!desc && !material) { this.toast('请至少写一句描述或粘贴素材'); return; }
+    if (!localStorage.getItem('deepseek_api_key')) {
+      this.closeCreateModal();
+      this.toast('请先配置 DeepSeek API Key');
+      this.openApiModal();
+      return;
+    }
+
+    const btn = this.el.createSubmitBtn;
+    btn.disabled = true;
+    btn.style.opacity = '.55';
+    btn.textContent = '生成中…';
+
+    const sys = '你是角色创建师。根据用户提供的角色名、描述与素材，创建一位情感陪伴角色，输出严格 JSON（不要 markdown 代码块）：\n{"name":"角色名","tag":"一句话标签（身份·性格）","greeting":"开场白（第一人称，符合角色，一句）","signature":"个性签名（一句）","bio":"角色简介（2-3句）","prompt":"完整人格 prompt"}\n\nprompt 字段必须包含这些章节（中文，结构参考）：\n# {name} — 记忆与人格\n你是{name}。{身份背景，自然交代}。\n## Layer 0：核心性格（最高优先级，2-4 条性格底色）\n## Layer 1：身份\n## Layer 2：表达风格（口头禅、说话方式；消息模式：像发微信，一次 1-3 条短消息换行分隔）\n## Layer 3：情感逻辑（开心/不开心/被冷落时分别怎么表现）\n## Layer 4：关系行为（对正在聊天的人）\n## Layer 5：边界与雷区\n## 记忆协议\n当这轮对话让你了解到对方的新偏好时，在回复最后一行追加【喜好：以「他」开头简短概括】。\n\n硬约束：全程无任何成人/性内容；说话自然、有辨识度、不 AI 腔、不总结。';
+    const user = '角色名：' + name + '\n描述：' + (desc || '（无）') + '\n素材：' + (material || '（无）');
+
+    try {
+      const out = await this.smallLLMCall([{ role: 'system', content: sys }, { role: 'user', content: user }], 2500, 90000);
+      const data = this.parseRoleJson(out);
+      if (!data || !data.name || !data.prompt) throw new Error('bad parse');
+
+      const id = 'custom_' + Date.now().toString(36);
+      const color = this.CUSTOM_COLORS[Object.keys(this.state.customGfs).length % this.CUSTOM_COLORS.length];
+      const gf = {
+        id: id,
+        name: data.name,
+        tag: data.tag || '自定义角色',
+        color: color,
+        avatar: this.makeInitialAvatar(data.name, color),
+        status: '在线',
+        greeting: data.greeting || ('你好呀，我是' + data.name + '。'),
+        profile: {
+          signature: data.signature || '',
+          basic: [],
+          bio: data.bio || '',
+          cards: [],
+        },
+        prompt: data.prompt,
+      };
+      // 补齐会话/记忆状态（新建角色不在启动时的遍历范围内）
+      if (!this.state.histories[id]) this.state.histories[id] = [];
+      if (!this.state.favs[id]) this.state.favs[id] = [];
+      if (!this.state.memories[id]) this.state.memories[id] = [];
+
+      this.state.customGfs[id] = gf;
+      this.saveCustomGfs();
+      this.closeCreateModal();
+      this.renderGfList();
+      this.switchGf(id);
+      this.toast('角色「' + gf.name + '」创建成功');
+    } catch (e) {
+      console.error('[createCharacter]', e);
+      this.toast(e.message === 'bad parse'
+        ? '生成失败：AI 返回格式异常，请重试'
+        : '生成失败：网络似乎不太稳定，稍后再试');
+    } finally {
+      btn.disabled = false;
+      btn.style.opacity = '';
+      btn.textContent = '✨ 生成角色';
+    }
+  },
+
   // ═══ 输入框自动伸缩 + IME 处理 ═══
   autoResizeInput() {
     const ta = this.el.playerInput;
@@ -1154,7 +1317,7 @@ ${existing || '（暂无）'}
   // ═══ 清空当前对话 ═══
   clearCurrentHistory() {
     const gfId = this.state.currentGf;
-    const name = GIRLFRIENDS[gfId].name;
+    const name = this.allGfs()[gfId].name;
     if (!confirm('确定清空与「' + name + '」的聊天记录吗？')) return;
     this.state.histories[gfId] = [];
     this.saveHistory(gfId);
@@ -1164,7 +1327,7 @@ ${existing || '（暂无）'}
 
   // ═══ 个人主页 ═══
   openProfile() {
-    const gf = GIRLFRIENDS[this.state.currentGf];
+    const gf = this.allGfs()[this.state.currentGf];
     if (!gf || !gf.profile) return;
     const p = gf.profile;
     this.el.profileAvatar.src = gf.avatar;
@@ -1282,13 +1445,20 @@ ${existing || '（暂无）'}
     this.el.playerInput.addEventListener('compositionend', () => { this.state.isComposing = false; });
     this.el.playerInput.addEventListener('input', () => this.autoResizeInput());
 
-    // 角色切换（侧栏 + 底部导航）
+    // 角色切换（侧栏 + 底部导航）+ 创建角色入口
     document.addEventListener('click', (e) => {
+      const addBtn = e.target.closest('#gf-add-btn');
+      if (addBtn) { this.openCreateModal(); return; }
       const card = e.target.closest('.gf-card');
       if (card) { this.switchGf(card.dataset.gf); return; }
       const nav = e.target.closest('.bottom-nav-item');
       if (nav) { this.switchGf(nav.dataset.gf); return; }
     });
+
+    // 创建角色
+    this.el.createCancelBtn.addEventListener('click', () => this.closeCreateModal());
+    this.el.createOverlay.addEventListener('click', () => this.closeCreateModal());
+    this.el.createSubmitBtn.addEventListener('click', () => this.createCharacter());
 
     // API Key
     this.el.apiBtn.addEventListener('click', () => this.openApiModal());

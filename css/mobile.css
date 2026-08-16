@@ -1,0 +1,137 @@
+/* ═══════════════════════════════════════════════════════════
+   AI-GF 移动端样式 — 768px 断点 + 安全区 + 键盘 insets 适配
+   键盘方案（HELIOS dev-brief-16 三件套）：
+   ① AndroidManifest adjustNothing（视口不收缩）
+   ② MainActivity 原生监听注入 --kb-height（物理像素÷density）
+   ③ 本文件用 padding 撑开布局，输入区恰好贴键盘上沿
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  :root {
+    --topbar-h: 52px;
+    --bottom-nav-h: 52px;      /* 底部导航高度（键盘撑开公式用） */
+    --status-bar-h: 28px;      /* Android 状态栏典型高度，让顶栏内容避开状态栏（原生注入后覆盖） */
+  }
+
+  /* ─── 顶栏：状态栏叠加 + 移动端按钮 ─── */
+  #top-bar {
+    height: calc(var(--topbar-h) + var(--status-bar-h, 0px));
+    padding-top: var(--status-bar-h, 0px);
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  #menu-btn { display: inline-flex; }
+
+  .gf-avatar { width: 32px; height: 32px; }
+  .gf-info:hover { background: transparent; }   /* 触屏无 hover */
+
+  /* ─── 隐藏侧栏（移动端改用底部导航） ─── */
+  #sidebar { display: none; }
+
+  .main-layout {
+    /* 键盘弹出：底部导航固定 bottom:0 被键盘遮挡（HELIOS v1.4 拍板行为），
+       输入区由 style.css 的 --kb-height padding 撑起，直接贴合键盘上沿 */
+    height: calc(100vh - var(--topbar-h) - var(--bottom-nav-h) - var(--status-bar-h, 0px));
+  }
+
+  #chat-view { padding: 0; }
+
+  #dialogue-area { padding: 14px 12px 8px; }
+
+  /* ─── 气泡：移动端占比更大 ─── */
+  .msg-text { max-width: 82%; font-size: 15px; }
+  .msg-avatar { width: 26px; height: 26px; }
+
+  /* ─── 输入区 ─── */
+  .input-area {
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  #player-input { font-size: 15px; padding: 10px 14px; border-radius: 16px; }
+  #send-btn { height: 40px; padding: 0 18px; border-radius: 16px; }
+
+  /* ─── 底部导航（微信式三女友横条 · 莫兰迪描边） ─── */
+  #mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px));
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--card-bg);
+    border-top: 1px solid var(--card-border);
+    backdrop-filter: blur(var(--blur));
+    -webkit-backdrop-filter: blur(var(--blur));
+    z-index: 40;
+  }
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font);
+    cursor: pointer;
+    transition: color .2s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .bottom-nav-item .bn-icon {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    transition: border-color .2s;
+  }
+  /* 每个 tab 的头像缩略 + 莫兰迪主题色描边 */
+  .bottom-nav-item[data-gf="wanwan"] .bn-icon { border: 2px solid rgba(217, 147, 180, .55); }
+  .bottom-nav-item[data-gf="linlin"] .bn-icon { border: 2px solid rgba(162, 146, 217, .55); }
+  .bottom-nav-item[data-gf="tangtang"] .bn-icon { border: 2px solid rgba(224, 176, 108, .55); }
+  .bottom-nav-item .bn-label { font-size: 10px; letter-spacing: .5px; }
+  .bottom-nav-item.active { color: var(--gf-color); }
+  .bottom-nav-item.active .bn-icon { border-color: var(--gf-color); }
+  .bottom-nav-item .bn-dot {
+    position: absolute;
+    top: -2px; right: -2px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #E58C8C;             /* 莫兰迪红 */
+    border: 1.5px solid var(--bg);
+    display: none;
+  }
+  .bottom-nav-item.unread .bn-dot { display: block; }
+
+  /* ─── 面板：移动端改为全宽抽屉 ─── */
+  .panel {
+    top: auto;
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 10px);
+    border-radius: 18px;
+  }
+  .menu-art { height: 64px; }
+
+  /* ─── 键盘弹出时隐藏菜单面板（避免浮在键盘上） ─── */
+  body.keyboard-open #menu-panel { display: none; }
+
+  /* ─── 个人主页：移动端全屏 ─── */
+  .profile-panel {
+    top: calc(var(--status-bar-h, 0px) + 10px);
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    transform: none;
+    width: auto;
+    max-height: none;
+    border-radius: 22px;
+  }
+
+  /* ─── 顶栏状态：消息发送中显示打字动画占位 ─── */
+  #top-status-text { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+}

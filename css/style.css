@@ -1,0 +1,920 @@
+/* ═══════════════════════════════════════════════════════════
+   AI-GF 桌面端样式 — 淡雅莫兰迪 · 雾面毛玻璃
+   珍珠潮汐 / 海港 / 星河 三主题，全主题按女友主题色
+   ═══════════════════════════════════════════════════════════ */
+
+/* ─── 设计令牌 ─── */
+:root {
+  /* 珍珠潮汐（默认浅色主题）— 珍珠白雾蓝底 */
+  --bg: #F4F6F8;
+  --bg-soft: rgba(246, 247, 250, .55);
+  --card-bg: rgba(255, 255, 255, .58);
+  --card-border: rgba(255, 255, 255, .72);
+  --text-main: #41485A;            /* 深灰蓝，比纯黑柔和 */
+  --text-dim: #727C8E;             /* 雾灰（保证小字可读性） */
+  --ok-color: #6FA98A;             /* 已配置状态·莫兰迪青绿 */
+  --bubble-gf: rgba(255, 255, 255, .78);
+  --bubble-gf-border: rgba(146, 156, 180, .16);
+  --input-bg: rgba(255, 255, 255, .7);
+  --shadow-soft: 0 8px 30px rgba(96, 100, 130, .08);
+  --shadow-tiny: 0 2px 10px rgba(96, 100, 130, .07);
+  --wall: url('../assets/chat-light.webp');
+  /* 遮罩上淡下浓：让壁纸在顶部呼吸 */
+  --scrim: linear-gradient(rgba(244, 246, 248, .4), rgba(244, 246, 248, .58) 55%, rgba(244, 246, 248, .78));
+  --scroll-thumb: rgba(96, 100, 130, .16);
+  --danger: #C98A8A;               /* 莫兰迪珊瑚红 */
+
+  --radius-lg: 22px;
+  --radius-bubble: 20px;           /* 气泡大圆角 */
+  --radius-md: 16px;
+  --radius-sm: 12px;
+  --blur: 20px;
+
+  --topbar-h: 56px;
+  --sidebar-w: 244px;
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+          'Hiragino Sans GB', 'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei', sans-serif;
+}
+
+/* ─── 女友主题色：莫兰迪低饱和三色，全主题生效 ───
+   默认值 = 苏晚晚（JS 初始化前兜底）；玩家气泡深色文字按女友各配 */
+:root {
+  --gf-color: #D993B4;              /* 苏晚晚 雾粉 */
+  --gf-color-soft: rgba(217, 147, 180, .2);
+  --gf-grad: linear-gradient(135deg, #E4AFC9, #D993B4);
+  --on-gf: #4A3440;                 /* 雾粉底上的深梅字（保证对比） */
+}
+body[data-gf="wanwan"] {
+  --gf-color: #D993B4;
+  --gf-color-soft: rgba(217, 147, 180, .2);
+  --gf-grad: linear-gradient(135deg, #E4AFC9, #D993B4);
+  --on-gf: #4A3440;
+}
+body[data-gf="linlin"] {
+  --gf-color: #A292D9;              /* 白凛 雾紫 */
+  --gf-color-soft: rgba(162, 146, 217, .2);
+  --gf-grad: linear-gradient(135deg, #B5A8E2, #A292D9);
+  --on-gf: #3A3556;                 /* 雾紫底上的深靛字（保证对比） */
+}
+body[data-gf="tangtang"] {
+  --gf-color: #E0B06C;              /* 唐糖 杏橙 */
+  --gf-color-soft: rgba(224, 176, 108, .22);
+  --gf-grad: linear-gradient(135deg, #ECC38B, #E0B06C);
+  --on-gf: #4E4022;                 /* 杏橙底上的深杏字（保证对比） */
+}
+
+/* 海港主题（暖米白，更温润） */
+html[data-theme="harbor"] {
+  --bg: #F5F2EC;
+  --bg-soft: rgba(243, 239, 232, .58);
+  --card-bg: rgba(255, 254, 251, .5);
+  --card-border: rgba(255, 255, 255, .6);
+  --text-main: #4B463F;
+  --text-dim: #847C6E;
+  --ok-color: #7FA98A;
+  --bubble-gf: rgba(255, 254, 251, .8);
+  --bubble-gf-border: rgba(160, 148, 130, .16);
+  --input-bg: rgba(255, 254, 251, .72);
+  --shadow-soft: 0 8px 30px rgba(120, 100, 80, .1);
+  --shadow-tiny: 0 2px 10px rgba(120, 100, 80, .08);
+  --wall: url('../assets/chat-harbor.webp');
+  --scrim: linear-gradient(rgba(245, 242, 236, .38), rgba(245, 242, 236, .56) 55%, rgba(245, 242, 236, .78));
+  --scroll-thumb: rgba(120, 100, 80, .16);
+}
+
+/* ═══ 星河主题（夜晚）═══
+   内部标识 moon（兼容已存主题的 localStorage）；显示名见 js/app.js THEMES。
+   星空壁纸由 scripts/generate-starry.py 程序生成（银河 + 星云 + 聚散星子） */
+html[data-theme="moon"] {
+  --bg: #10172E;
+  --bg-soft: rgba(36, 48, 86, .5);
+  --card-bg: rgba(34, 46, 86, .6);
+  --card-border: rgba(160, 178, 240, .14);
+  --text-main: #E8EDF8;
+  --text-dim: #B3BFDB;
+  --ok-color: #9BD8B4;
+  --bubble-gf: rgba(114, 134, 190, .85);
+  --bubble-gf-border: rgba(170, 190, 248, .22);
+  --input-bg: rgba(36, 48, 86, .72);
+  --shadow-soft: 0 8px 30px rgba(4, 8, 24, .5);
+  --shadow-tiny: 0 2px 10px rgba(4, 8, 24, .45);
+  /* 星空壁纸（程序生成：银河 + 星云 + 聚散星子） */
+  --wall: url('../assets/starry.webp');
+  /* 遮罩更通透（月光不被压暗） */
+  --scrim: linear-gradient(rgba(16, 23, 46, .18), rgba(16, 23, 46, .34) 55%, rgba(16, 23, 46, .56));
+  --scroll-thumb: rgba(255, 255, 255, .15);
+  --danger: #D89A9A;
+}
+
+/* 星河：女友主题色提亮（深底上更通透），soft 底更实以突出选中态，深字保持对比 */
+html[data-theme="moon"] body[data-gf="wanwan"] {
+  --gf-color: #DDA7C2;              /* 降饱和雾粉（深底上不刺眼） */
+  --gf-color-soft: rgba(221, 167, 194, .22);
+  --gf-grad: linear-gradient(135deg, #EBBFD6, #DFABC6);
+}
+html[data-theme="moon"] body[data-gf="linlin"] {
+  --gf-color: #B8A8EC;
+  --gf-color-soft: rgba(184, 168, 236, .22);
+  --gf-grad: linear-gradient(135deg, #C8BBF2, #B8A8EC);
+}
+html[data-theme="moon"] body[data-gf="tangtang"] {
+  --gf-color: #EFC48A;
+  --gf-color-soft: rgba(239, 196, 138, .24);
+  --gf-grad: linear-gradient(135deg, #F7D5A5, #EFC48A);
+}
+
+/* 星子呼吸层（第一组）：浮于壁纸上、内容之下，模拟星空闪烁 */
+html[data-theme="moon"] .app::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(2.5px 2.5px at 12% 16%, rgba(255,255,255,1), transparent 62%),
+    radial-gradient(1.5px 1.5px at 24% 30%, rgba(255,255,255,.9), transparent 62%),
+    radial-gradient(2.5px 2.5px at 40% 12%, rgba(255,255,255,.95), transparent 62%),
+    radial-gradient(2px 2px at 56% 26%, rgba(255,255,255,.85), transparent 62%),
+    radial-gradient(2.5px 2.5px at 70% 14%, rgba(255,255,255,.9), transparent 62%),
+    radial-gradient(1.5px 1.5px at 86% 30%, rgba(255,255,255,.8), transparent 62%),
+    radial-gradient(2.5px 2.5px at 94% 12%, rgba(255,255,255,.75), transparent 62%),
+    radial-gradient(2px 2px at 6% 44%, rgba(255,255,255,.85), transparent 62%),
+    radial-gradient(2px 2px at 78% 52%, rgba(255,255,255,.7), transparent 62%),
+    radial-gradient(2px 2px at 48% 42%, rgba(255,255,255,.65), transparent 62%),
+    radial-gradient(1.5px 1.5px at 18% 58%, rgba(255,255,255,.6), transparent 62%),
+    radial-gradient(2px 2px at 34% 20%, rgba(255,255,255,.8), transparent 62%),
+    radial-gradient(1.5px 1.5px at 64% 6%, rgba(255,255,255,.7), transparent 62%),
+    radial-gradient(2px 2px at 90% 56%, rgba(255,255,255,.6), transparent 62%);
+  opacity: .8;
+  animation: stars-twinkle 7s ease-in-out infinite alternate;
+}
+@keyframes stars-twinkle {
+  from { opacity: .65; }
+  to   { opacity: 1; }
+}
+
+/* 星子呼吸层（第二组）：与第一组错相位闪烁，星空呼吸更自然 */
+html[data-theme="moon"] .app::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1.5px 1.5px at 30% 22%, rgba(255,255,255,.8), transparent 62%),
+    radial-gradient(1px 1px at 62% 8%, rgba(255,255,255,.7), transparent 62%),
+    radial-gradient(1.5px 1.5px at 82% 20%, rgba(255,255,255,.65), transparent 62%),
+    radial-gradient(1px 1px at 44% 34%, rgba(255,255,255,.6), transparent 62%),
+    radial-gradient(1.5px 1.5px at 10% 30%, rgba(255,255,255,.55), transparent 62%),
+    radial-gradient(1px 1px at 92% 44%, rgba(255,255,255,.5), transparent 62%),
+    radial-gradient(1.5px 1.5px at 54% 50%, rgba(255,255,255,.5), transparent 62%),
+    radial-gradient(1px 1px at 26% 62%, rgba(255,255,255,.45), transparent 62%),
+    radial-gradient(1.5px 1.5px at 70% 70%, rgba(255,255,255,.45), transparent 62%);
+  opacity: .6;
+  animation: stars-twinkle 9s ease-in-out 2.5s infinite alternate;
+}
+
+/* 夜晚主题：遮罩更深，滚动条/文字色已由变量接管 */
+html[data-theme="moon"] .overlay { background: rgba(4, 8, 18, .55); }
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font);
+  color: var(--text-main);
+  background: var(--bg);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+}
+
+::selection { background: var(--gf-color-soft); }
+
+/* ─── 壁纸层 ─── */
+#wall {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-image: var(--wall);
+  background-size: cover;
+  background-position: center;
+  filter: saturate(.94);            /* 轻微柔化，淡雅感 */
+  transition: background-image .3s ease;
+}
+#wall::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+}
+
+/* ─── 应用容器 ─── */
+.app {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ─── 顶栏 ─── */
+#top-bar {
+  height: var(--topbar-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 18px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--card-border);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  z-index: 10;
+}
+
+.gf-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  color: var(--text-main);   /* button 不继承 body 色，须显式声明（否则深色主题下黑字） */
+  cursor: pointer;
+  padding: 0;
+  border-radius: 999px;
+  transition: background .2s;
+}
+.gf-info:hover { background: var(--bg-soft); }
+.gf-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--gf-color);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, .8), 0 0 0 4px var(--gf-color-soft), 0 2px 10px rgba(96, 100, 130, .18);
+  transition: border-color .3s, box-shadow .3s;
+}
+.gf-name { font-size: 15px; font-weight: 600; letter-spacing: .5px; }
+.gf-status {
+  font-size: 11px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  letter-spacing: .3px;
+}
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #8FC7AC;              /* 莫兰迪青绿 */
+  display: inline-block;
+  animation: status-pulse 3.2s ease-in-out infinite;
+}
+@keyframes status-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
+.top-actions { display: flex; gap: 6px; }
+.icon-btn {
+  width: 36px; height: 36px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  font-size: 17px;
+  cursor: pointer;
+  transition: background .18s, transform .12s;
+}
+.icon-btn:hover { background: var(--gf-color-soft); }
+.icon-btn:active { transform: scale(.9); background: var(--gf-color-soft); }
+
+/* ─── 主布局 ─── */
+.main-layout {
+  display: flex;
+  /* 键盘弹出：原生注入 --kb-height（CSS 像素，MainActivity 已除 density）；
+     上移量 = kb - height 已预留的底部导航高，输入区贴合键盘上沿；
+     max 保护小键盘场景。真机视口不随键盘收缩（adjustNothing），无双重偏移 */
+  height: calc(100vh - var(--topbar-h) - var(--status-bar-h, 0px));
+  padding-bottom: max(0px, calc(var(--kb-height, 0px) - var(--bottom-nav-h, 0px)));
+  transition: padding-bottom 0.15s ease-out;
+}
+
+/* ─── 侧栏 ─── */
+#sidebar {
+  width: var(--sidebar-w);
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  padding: 20px 16px;
+  margin: 16px 0 16px 16px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(var(--blur));
+  -webkit-backdrop-filter: blur(var(--blur));
+  box-shadow: var(--shadow-soft);
+}
+
+.sidebar-brand { padding: 6px 10px 16px; display: flex; align-items: center; gap: 10px; }
+.brand-title { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+.brand-sub { font-size: 12px; color: var(--text-dim); margin-top: 3px; letter-spacing: .4px; }
+.brand-logo {
+  width: 36px; height: 36px;
+  flex: none;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  background: linear-gradient(135deg, #AFBCE0, #B5A4E0);   /* 月见雾蓝紫 */
+  box-shadow: 0 4px 14px rgba(162, 146, 217, .3);
+  color: #fff;
+}
+.sidebar-brand-text { min-width: 0; }
+
+.sidebar-section-title {
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 0 10px 10px;
+  letter-spacing: 3px;
+}
+
+#gf-list { overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+#gf-list::-webkit-scrollbar { width: 4px; }
+#gf-list::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
+
+.gf-card {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+}
+.gf-card:hover { background: var(--bg-soft); }
+.gf-card.active {
+  background: var(--gf-color-soft);
+  border-color: var(--gf-color);
+}
+.gf-card-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+  border: 2px solid transparent;
+  transition: border-color .2s;
+}
+.gf-card.active .gf-card-avatar { border-color: var(--gf-color); }
+.gf-card-name { font-size: 14px; font-weight: 600; letter-spacing: .5px; }
+.gf-card-tag { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.gf-card.active .gf-card-tag { color: var(--text-main); }   /* 选中卡淡底上副标题加深，保可读 */
+
+.sidebar-footer {
+  padding: 14px 10px 4px;
+  border-top: 1px solid var(--card-border);
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.sidebar-footer-row.dim { letter-spacing: .5px; }
+
+/* ─── 聊天区 ─── */
+#chat-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#chat-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 8px;
+}
+
+#dialogue-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px 16px 12px;
+  scroll-behavior: smooth;
+}
+#dialogue-area::-webkit-scrollbar { width: 4px; }
+#dialogue-area::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
+
+/* ─── 消息气泡（微信式 · 柔圆角 + 小尾巴） ─── */
+.msg { margin-bottom: 14px; display: flex; }
+
+.msg.gf { justify-content: flex-start; }
+.msg.player { justify-content: flex-end; }
+.msg.system { justify-content: center; }
+
+.msg-avatar {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 8px;
+  align-self: flex-end;
+  flex: none;
+  border: 1.5px solid rgba(255, 255, 255, .55);
+  box-shadow: 0 1px 5px rgba(96, 100, 130, .16);
+}
+
+.msg-text {
+  max-width: min(66%, 520px);
+  padding: 11px 15px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  letter-spacing: .2px;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+
+.msg.gf .msg-text {
+  background: var(--bubble-gf);
+  border: 1px solid var(--bubble-gf-border);
+  border-radius: var(--radius-bubble);
+  border-top-left-radius: 5px;      /* 柔化小尾巴 */
+  box-shadow: var(--shadow-tiny);
+}
+
+.msg.player .msg-text {
+  background: var(--gf-grad);
+  color: var(--on-gf);
+  border-radius: var(--radius-bubble);
+  border-top-right-radius: 5px;     /* 柔化小尾巴 */
+  box-shadow: 0 3px 14px var(--gf-color-soft);
+  transition: background .3s;
+}
+
+.msg.system .msg-text {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 999px;
+  padding: 7px 16px;
+  backdrop-filter: blur(8px);
+  letter-spacing: .4px;
+}
+
+.msg { animation: msg-appear .28s cubic-bezier(.22, .9, .36, 1); }
+@keyframes msg-appear {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ─── 打字指示器 ─── */
+.typing-indicator { display: inline-flex; gap: 5px; padding: 4px 2px; }
+.typing-indicator span {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gf-color);
+  opacity: .85;
+  animation: typing-bounce 1.3s infinite;
+}
+.typing-indicator span:nth-child(2) { animation-delay: .15s; }
+.typing-indicator span:nth-child(3) { animation-delay: .3s; }
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .45; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+/* ─── 输入区 ─── */
+.input-area {
+  flex: none;
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 14px 14px;
+}
+
+#player-input {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  background: var(--input-bg);
+  padding: 12px 16px;
+  font-size: 15px;
+  font-family: var(--font);
+  color: var(--text-main);
+  outline: none;
+  max-height: 120px;
+  line-height: 1.5;
+  box-shadow: var(--shadow-tiny);
+  transition: border-color .2s, box-shadow .2s;
+}
+#player-input:focus {
+  border-color: var(--gf-color);
+  box-shadow: 0 0 0 3px var(--gf-color-soft);   /* 女友色淡光晕 */
+}
+#player-input::placeholder { color: var(--text-dim); }
+
+#send-btn {
+  flex: none;
+  height: 44px;
+  padding: 0 22px;
+  border: none;
+  border-radius: 18px;
+  background: var(--gf-grad);
+  color: var(--on-gf);
+  font-size: 14.5px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: filter .15s, transform .15s, box-shadow .2s;
+  box-shadow: 0 4px 14px var(--gf-color-soft);
+}
+#send-btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
+#send-btn:active { transform: scale(.96); }
+#send-btn:disabled { opacity: .55; cursor: not-allowed; }
+
+/* ─── 底部导航（仅移动端显示） ─── */
+#mobile-bottom-nav { display: none; }
+
+/* ─── 遮罩 / 面板 ─── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background: rgba(15, 23, 35, .32);
+  backdrop-filter: blur(2px);
+}
+.hidden { display: none !important; }
+
+.panel {
+  position: fixed;
+  top: 66px;
+  right: 14px;
+  z-index: 95;
+  min-width: 216px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  box-shadow: var(--shadow-soft);
+  padding: 8px;
+  overflow: hidden;
+  animation: panel-appear .16s ease-out;
+}
+@keyframes panel-appear {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 菜单横幅装饰：按主题切换（月夜主题用渐变+迷你月亮，无 moon 素材） */
+.menu-art {
+  position: relative;
+  height: 84px;
+  margin: -8px -8px 6px;
+  background-size: cover;
+  background-position: center;
+  background-image: url('../assets/menu-light.webp');
+  border-radius: 10px 10px 0 0;
+  overflow: hidden;
+}
+html[data-theme="harbor"] .menu-art { background-image: url('../assets/menu-harbor.webp'); }
+/* 星河主题：直接用星空壁纸的右上区域做横幅，与背景同源 */
+html[data-theme="moon"] .menu-art {
+  background-image: url('../assets/starry.webp');
+  background-position: 68% 8%;
+  background-size: cover;
+}
+
+.panel-title {
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 6px 10px 4px;
+  letter-spacing: 3px;
+}
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: var(--text-main);
+  font-size: 14px;
+  font-family: var(--font);
+  padding: 10px 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background .18s;
+}
+.menu-item:hover { background: var(--bg-soft); }
+.menu-item.danger { color: var(--danger); }
+.menu-item.dim { color: var(--text-dim); cursor: default; }
+.menu-item.dim:hover { background: transparent; }
+
+/* ─── 模态弹窗 ─── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 35, .38);
+  backdrop-filter: blur(3px);
+}
+.modal {
+  width: min(400px, calc(100vw - 48px));
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  box-shadow: var(--shadow-soft);
+  padding: 26px;
+  animation: modal-appear .2s ease-out;
+}
+@keyframes modal-appear {
+  from { opacity: 0; transform: scale(.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+.modal-title { font-size: 17px; font-weight: 700; letter-spacing: .5px; }
+.modal-desc { font-size: 13px; color: var(--text-dim); margin: 10px 0 16px; line-height: 1.7; }
+.modal input[type="password"], .modal input[type="text"] {
+  width: 100%;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--input-bg);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--text-main);
+  outline: none;
+  font-family: var(--font);
+  transition: border-color .2s, box-shadow .2s;
+}
+.modal input:focus {
+  border-color: var(--gf-color);
+  box-shadow: 0 0 0 3px var(--gf-color-soft);
+}
+.modal-buttons { display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end; flex-wrap: wrap; }
+.backup-output {
+  width: 100%;
+  min-height: 120px;
+  max-height: 240px;
+  margin-top: 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--input-bg);
+  padding: 12px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: ui-monospace, Consolas, monospace;
+  color: var(--text-main);
+  outline: none;
+  resize: vertical;
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+.btn {
+  border: none;
+  border-radius: 14px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: filter .15s, transform .12s;
+}
+.btn.primary {
+  background: var(--gf-grad);
+  color: var(--on-gf);
+  font-weight: 600;
+  box-shadow: 0 4px 12px var(--gf-color-soft);
+}
+.btn.secondary { background: var(--bubble-gf); color: var(--text-main); border: 1px solid var(--bubble-gf-border); }
+.btn:hover { filter: brightness(1.05); }
+.btn:active { transform: scale(.97); }
+
+/* ─── Toast ─── */
+#toast {
+  position: fixed;
+  left: 50%;
+  bottom: 96px;
+  transform: translateX(-50%);
+  z-index: 120;
+  background: rgba(58, 64, 80, .78);
+  border: 1px solid rgba(255, 255, 255, .14);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #F2F4F8;
+  font-size: 13px;
+  letter-spacing: .4px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  box-shadow: 0 8px 24px rgba(30, 34, 50, .25);
+  animation: toast-appear .2s ease-out;
+  white-space: nowrap;
+}
+@keyframes toast-appear {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* 壁纸切换淡入（JS 在 toggleTheme 时触发） */
+#wall.theme-fade { animation: wall-fade .5s ease; }
+@keyframes wall-fade {
+  from { opacity: .5; }
+  to { opacity: 1; }
+}
+
+/* 尊重系统减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* 移动端才有的元素默认隐藏 */
+#menu-btn { display: none; }
+
+/* ─── 个人主页 ─── */
+.profile-panel {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 95;
+  width: min(420px, calc(100vw - 40px));
+  /* 高度上限跟随视口（不再设 640px 上限，避免内容卡片被折叠到滚动区） */
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  box-shadow: var(--shadow-soft);
+  animation: panel-appear .18s ease-out;
+}
+.profile-panel::-webkit-scrollbar { width: 4px; }
+.profile-panel::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
+
+.profile-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bubble-gf);
+  color: var(--text-dim);
+  font-size: 15px;
+  cursor: pointer;
+  z-index: 2;
+  transition: filter .15s, transform .12s;
+}
+.profile-close:hover { filter: brightness(.97); }
+.profile-close:active { transform: scale(.92); }
+
+.profile-header {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 34px 20px 22px;
+  text-align: center;
+  /* 女友色淡光晕从头顶洒下 */
+  background: radial-gradient(420px 260px at 50% -30%, var(--gf-color-soft), transparent 70%);
+}
+.profile-avatar {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--gf-color);
+  box-shadow: 0 0 0 6px var(--gf-color-soft), 0 8px 24px rgba(96, 100, 130, .2);
+  margin-bottom: 14px;
+}
+.profile-name { font-size: 20px; font-weight: 700; letter-spacing: 2px; }
+.profile-tag {
+  font-size: 12px;
+  color: var(--gf-color);
+  background: var(--gf-color-soft);
+  border-radius: 999px;
+  padding: 4px 14px;
+  margin-top: 8px;
+  letter-spacing: .5px;
+}
+.profile-signature {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 12px;
+  line-height: 1.6;
+}
+
+.profile-body {
+  padding: 6px 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.profile-card {
+  background: var(--bg-soft);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 15px 16px;
+}
+.profile-card-title {
+  font-size: 12px;
+  color: var(--text-dim);
+  letter-spacing: 2px;
+  margin-bottom: 10px;
+}
+.profile-basic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.profile-basic-item { text-align: center; }
+.profile-basic-item .pb-label { font-size: 11px; color: var(--text-dim); letter-spacing: 1px; }
+.profile-basic-item .pb-value { font-size: 14px; font-weight: 600; margin-top: 3px; }
+.profile-bio { font-size: 13.5px; line-height: 1.8; color: var(--text-main); }
+.profile-placeholder {
+  font-size: 12.5px;
+  color: var(--text-dim);
+  text-align: center;
+  padding: 18px 0 6px;
+  letter-spacing: .5px;
+}
+
+/* ─── 回忆时间线（自动提取的重要回忆） ─── */
+.profile-memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+  padding-left: 16px;
+}
+/* 时间线竖线：连接各个圆点 */
+.profile-memory-list::before {
+  content: '';
+  position: absolute;
+  left: 2.5px;
+  top: 8px;
+  bottom: 8px;
+  width: 1px;
+  background: var(--gf-color);
+  opacity: .5;
+}
+.profile-memory-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  position: relative;
+}
+.pm-dot {
+  position: absolute;
+  left: -16px;
+  top: 6px;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--gf-color);
+  box-shadow: 0 0 0 3px var(--gf-color-soft);
+  flex: none;
+}
+.pm-text {
+  flex: 1;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+.pm-date {
+  flex: none;
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: .3px;
+  margin-top: 3px;
+}
+
+/* ─── 喜好 chips（自动提取的偏好标签） ─── */
+.profile-fav-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.pf-chip {
+  font-size: 12.5px;
+  color: var(--gf-color);
+  background: var(--gf-color-soft);
+  border: 1px solid var(--gf-color);
+  border-radius: 999px;
+  padding: 5px 13px;
+  letter-spacing: .3px;
+}

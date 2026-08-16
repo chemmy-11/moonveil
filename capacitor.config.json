@@ -1,0 +1,23 @@
+{
+  "appId": "com.aigf.app",
+  "appName": "月见",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": false,
+    "webContentsDebuggingEnabled": true
+  },
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": false,
+      "resetWhenUpgrade": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#F7FAFC"
+    }
+  }
+}

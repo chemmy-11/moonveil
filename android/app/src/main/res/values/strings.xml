@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">月见</string>
+    <string name="title_activity_main">月见</string>
+    <string name="package_name">com.aigf.app</string>
+    <string name="custom_url_scheme">com.aigf.app</string>
+</resources>

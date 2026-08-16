@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>月见 · 三个女朋友</title>
+  <link rel="icon" type="image/png" href="assets/icons/favicon.png">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="stylesheet" href="css/style.css?v=1.2.0">
+  <link rel="stylesheet" href="css/mobile.css?v=1.2.0">
+</head>
+<body>
+
+<!-- 壁纸层（随主题切换 light/harbor） -->
+<div id="wall"></div>
+
+<div class="app" id="app">
+
+  <!-- ════ 顶栏 ════ -->
+  <header id="top-bar">
+    <button class="gf-info" id="gf-info" title="查看她的主页">
+      <img class="gf-avatar" id="top-avatar" src="assets/avatar.png" alt="">
+      <div class="gf-meta">
+        <div class="gf-name" id="top-name">苏晚晚</div>
+        <div class="gf-status" id="top-status"><span class="status-dot"></span><span id="top-status-text">在线</span></div>
+      </div>
+    </button>
+    <div class="top-actions">
+      <button class="icon-btn" id="theme-toggle" title="切换主题">🌓</button>
+      <button class="icon-btn" id="api-btn" title="API Key">🔑</button>
+      <button class="icon-btn" id="menu-btn" title="菜单">⋯</button>
+    </div>
+  </header>
+
+  <div class="main-layout" id="main-layout">
+
+    <!-- ════ 侧栏：三位女友列表（桌面端） ════ -->
+    <aside id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">🌙</div>
+        <div class="sidebar-brand-text">
+          <div class="brand-title">月见</div>
+          <div class="brand-sub">Moonveil · 三个女朋友</div>
+        </div>
+      </div>
+      <div class="sidebar-section-title">我的女友</div>
+      <div id="gf-list"><!-- 由 js 渲染三位女友卡片 --></div>
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-row" id="api-status-row">
+          <span id="api-status-text">API Key 未配置</span>
+        </div>
+        <div class="sidebar-footer-row dim">v<span id="version-text">1.0.0</span></div>
+      </div>
+    </aside>
+
+    <!-- ════ 主聊天区 ════ -->
+    <main id="chat-main">
+      <section id="chat-view" class="view active">
+        <div id="dialogue-area">
+          <!-- 消息气泡由 js 渲染 -->
+          <div class="msg system" id="chat-placeholder">
+            <div class="msg-text">点开左侧的女友开始聊天吧</div>
+          </div>
+        </div>
+        <div class="input-area">
+          <textarea id="player-input" rows="1" placeholder="写点什么吧…"></textarea>
+          <button id="send-btn">发送</button>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ════ 移动端底部导航：三位女友 tab ════ -->
+  <nav id="mobile-bottom-nav">
+    <!-- 由 js 渲染三个女友 tab -->
+  </nav>
+
+</div>
+
+<!-- ════ 个人主页 ════ -->
+<div id="profile-overlay" class="overlay hidden"></div>
+<div id="profile-panel" class="profile-panel hidden">
+  <button class="profile-close" id="profile-close" aria-label="关闭">✕</button>
+  <div class="profile-header">
+    <img class="profile-avatar" id="profile-avatar" src="" alt="">
+    <div class="profile-name" id="profile-name"></div>
+    <div class="profile-tag" id="profile-tag"></div>
+    <div class="profile-signature" id="profile-signature"></div>
+  </div>
+  <div class="profile-body" id="profile-body"><!-- 信息卡由 js 渲染 --></div>
+</div>
+
+<!-- ════ 菜单面板 ════ -->
+<div id="menu-overlay" class="overlay hidden"></div>
+<div id="menu-panel" class="panel hidden">
+  <div class="menu-art"></div>
+  <div class="panel-title">菜单</div>
+  <button class="menu-item" id="menu-theme">🌓 主题：珍珠潮汐</button>
+  <button class="menu-item" id="menu-update">🔄 检查更新</button>
+  <button class="menu-item" id="menu-backup">🗂 存档管理</button>
+  <button class="menu-item" id="menu-api">🔑 设置 API Key</button>
+  <button class="menu-item danger" id="menu-clear">🗑 清空当前对话</button>
+  <div class="menu-item dim">v<span id="menu-version">1.0.0</span></div>
+</div>
+
+<!-- ════ API Key 弹窗 ════ -->
+<div id="api-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-title">配置 DeepSeek API Key</div>
+    <p class="modal-desc">三位女友的对话由 DeepSeek 大模型实时生成。Key 只保存在你的浏览器本地，不会上传到任何服务器。</p>
+    <!-- type=text + text-security：Android 不触发安全键盘（方便粘贴 API Key），仍以圆点遮挡 -->
+    <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <div class="modal-buttons">
+      <button class="btn secondary" id="api-skip-btn">跳过</button>
+      <button class="btn primary" id="api-save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 检查更新弹窗 ════ -->
+<div id="update-overlay" class="modal-overlay hidden"></div>
+<div id="update-modal" class="modal hidden">
+  <div class="modal-title">发现新版本 ✨</div>
+  <p class="modal-desc" id="update-desc" style="white-space: pre-line;"></p>
+  <div class="modal-buttons">
+    <button class="btn secondary" id="update-copy-btn">📋 复制下载链接</button>
+    <button class="btn secondary" id="update-cancel-btn">稍后再说</button>
+    <button class="btn primary" id="update-download-btn">前往下载</button>
+  </div>
+</div>
+
+<!-- ════ 存档管理 ════ -->
+<div id="backup-overlay" class="modal-overlay hidden"></div>
+<div id="backup-modal" class="modal hidden">
+  <div class="modal-title">存档管理</div>
+  <p class="modal-desc">聊天记录保存在本机，升级 App 不会丢失。建议定期导出备份——换机或卸载前先导出一份。</p>
+  <div class="modal-buttons" style="justify-content: flex-start;">
+    <button class="btn primary" id="backup-export-btn">⬇️ 生成存档</button>
+    <button class="btn secondary" id="backup-import-btn">⬆️ 导入存档</button>
+    <input type="file" id="backup-file-input" accept="application/json,.json" style="display:none">
+  </div>
+  <textarea id="backup-output" class="backup-output hidden" readonly placeholder="点「生成存档」后这里会出现存档内容，可复制保存"></textarea>
+  <button class="btn secondary" id="backup-copy-btn" style="display:none; width: 100%; margin-top: 10px;">📋 复制存档</button>
+</div>
+
+<!-- ════ 轻提示 ════ -->
+<div id="toast" class="hidden"></div>
+
+<script src="js/version.js?v=1.2.0"></script>
+<script src="js/data.js?v=1.2.0"></script>
+<script src="js/app.js?v=1.2.0"></script>
+</body>
+</html>

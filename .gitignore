@@ -1,0 +1,22 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# Android APK 产物（android/ 源码纳入版本控制，内部忽略规则见 android/.gitignore）
+*.apk
+
+# Node.js / Capacitor
+node_modules/
+www/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# 本地工具数据（不随公开仓库发布）
+.reasonix/
+.zcode/
+
+# 本地参考素材（版权不明/未授权资源，不随公开仓库发布）
+成品-1.png

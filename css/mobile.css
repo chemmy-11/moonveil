@@ -1,0 +1,145 @@
+/* ═══════════════════════════════════════════════════════════
+   AI-GF 移动端样式 — 768px 断点 + 安全区 + 键盘 insets 适配
+   键盘方案（HELIOS dev-brief-16 三件套）：
+   ① AndroidManifest adjustNothing（视口不收缩）
+   ② MainActivity 原生监听注入 --kb-height（物理像素÷density）
+   ③ 本文件用 padding 撑开布局，输入区恰好贴键盘上沿
+   ═══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+
+  :root {
+    --topbar-h: 52px;
+    --bottom-nav-h: 0px;       /* 底部导航已移除（功能收进侧栏抽屉） */
+    --status-bar-h: 28px;      /* Android 状态栏典型高度，让顶栏内容避开状态栏（原生注入后覆盖） */
+  }
+
+  /* ─── 顶栏：状态栏叠加 + 移动端按钮 ─── */
+  #top-bar {
+    height: calc(var(--topbar-h) + var(--status-bar-h, 0px));
+    padding-top: var(--status-bar-h, 0px);
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+  #sidebar-toggle { display: inline-flex; }
+
+  .gf-avatar { width: 32px; height: 32px; }
+  .gf-info:hover { background: transparent; }   /* 触屏无 hover */
+
+  /* ─── 侧栏抽屉：功能 + 女友列表（从左滑出） ─── */
+  #sidebar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: min(78vw, 300px);
+    margin: 0;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+    z-index: 90;
+    transform: translateX(-110%);
+    transition: transform .25s cubic-bezier(.22, .9, .36, 1);
+    box-shadow: 0 8px 40px rgba(4, 8, 24, .4);
+  }
+  #sidebar.open { transform: translateX(0); }
+  #sidebar-overlay { z-index: 85; }
+  .sidebar-actions { display: flex; flex-direction: column; gap: 2px; padding: 4px 0 12px; }
+  .sidebar-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    font-size: var(--text-base);
+    font-family: var(--font-sans);
+    padding: 11px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .sidebar-action .mi-icon { color: var(--text-dim); }
+  .sidebar-action:hover, .sidebar-action:active { background: var(--gf-color-soft); }
+  .sidebar-action .mi-icon svg { width: 16px; height: 16px; }
+  .sidebar-action.danger { color: var(--danger); }
+  .sidebar-action.danger .mi-icon { color: var(--danger); }
+
+  .main-layout {
+    /* 键盘弹出：底部导航固定 bottom:0 被键盘遮挡（HELIOS v1.4 拍板行为），
+       输入区由 style.css 的 --kb-height padding 撑起，直接贴合键盘上沿 */
+    height: calc(100vh - var(--topbar-h) - var(--bottom-nav-h) - var(--status-bar-h, 0px));
+  }
+
+  #chat-view { padding: 0; }
+
+  #dialogue-area { padding: 14px 12px 8px; }
+
+  /* ─── 气泡：移动端占比更大 ─── */
+  .msg-text { max-width: 82%; font-size: var(--text-md); }
+  .msg-avatar { width: 26px; height: 26px; }
+
+  /* ─── 输入区 ─── */
+  .input-area {
+    padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+  }
+  #player-input { font-size: var(--text-md); padding: 10px 14px; border-radius: 16px; }
+  #send-btn { width: 40px; height: 40px; border-radius: 14px; }
+  #send-btn svg { width: 17px; height: 17px; }
+  #input-plus-btn { width: 40px; height: 40px; border-radius: 14px; }
+
+  /* ─── 聊天图片（issue #8）+「+」聚合抽屉（issue #23/#30）：移动端 ─── */
+  #input-plus-menu { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
+  .input-plus-item { padding: 10px 2px 8px; }   /* 触控目标：瓦片 48px + 名称 */
+  #img-preview-bar { margin: 0 12px 6px; }
+  .msg-img { max-width: min(220px, 100%); max-height: 300px; }
+  .lightbox-overlay img { max-width: 96vw; max-height: 88vh; }
+
+  /* 底部导航已移除：女友切换走侧栏抽屉 */
+
+
+  /* ─── 消息菜单：移动端改底部 ActionSheet ─── */
+  #msg-menu.sheet {
+    left: 12px !important;
+    right: 12px !important;
+    top: auto !important;
+    bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px) + 12px);
+    border-radius: var(--radius-lg);
+    min-width: 0;
+  }
+  #msg-menu.sheet .msg-menu-item {
+    padding: 14px 16px;          /* 触摸目标放大 */
+    font-size: var(--text-md);
+  }
+
+  /* ─── 个人主页：移动端真全屏（主页形态 · issue #27）─── */
+  .profile-panel {
+    top: var(--status-bar-h, 0px);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    width: auto;
+    border-radius: 0;
+    border: none;
+    animation: ph-appear-m .24s cubic-bezier(.22, .9, .36, 1);
+  }
+  @keyframes ph-appear-m {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: none; }
+  }
+  /* 全屏后关闭键避开状态栏 */
+  .profile-close { top: calc(var(--status-bar-h, 0px) + 12px); }
+  .profile-body { padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ─── 顶栏状态：消息发送中显示打字动画占位 ─── */
+  #top-status-text { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ─── 语音输入（issue #38）：移动端触控目标加大 ─── */
+  #voice-mode-btn { width: 40px; height: 40px; border-radius: 14px; }
+  #hold-talk-btn { min-height: 40px; }
+  .msg-tts-btn { width: 26px; height: 26px; }
+  .msg-tts-btn svg { width: 16px; height: 16px; }
+
+}

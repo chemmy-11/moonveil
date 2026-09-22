@@ -1,0 +1,154 @@
+/* ═══════════════════════════════════════════════════════════
+   AI-GF 设计 Token — 全局设计系统单一来源
+   ─────────
+   使用规则：
+   1. 所有视觉决策（字号、字重、间距、圆角、阴影、过渡）从 token 取，不写魔法值
+   2. 主题（珍珠/海港/星河/山月）只覆盖 token，不改组件样式
+   3. 媒体查询（mobile/tablet）只调 token 映射，不改组件结构
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  /* ═══ 字体栈 ═══
+     中英优先级：苹方/PingFang > HarmonyOS Sans > MiSans > 微软雅黑
+     （macOS 苹方优先，Windows 中文退到 MiSans/微软雅黑，体验都不差） */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
+               'Hiragino Sans GB', 'HarmonyOS Sans SC', 'MiSans', 'Microsoft YaHei', sans-serif;
+  --font-handwriting: 'LXGW WenKai Chat', var(--font-sans);   /* 女友气泡专用 */
+  --font-mono: ui-monospace, 'SF Mono', Consolas, 'Liberation Mono', monospace;
+  --font: var(--font-sans);                                  /* 兼容旧引用 */
+
+  /* ═══ 字号刻度（九级，clamp 流式缩放）═══
+     基准 16px；用 clamp(min, fluid, max) 在窗口缩放/横竖屏时平滑过渡
+     xs<sm<base<md<lg<xl<2xl<3xl<4xl
+     原项目散落 11/12/12.5/13/13.5/14/14.5/15/17/20 全部落入这九级 */
+  --text-xs:   clamp(11px, 0.7rem + 0.15vw, 12px);
+  --text-sm:   clamp(12px, 0.75rem + 0.2vw, 13px);
+  --text-base: clamp(13px, 0.8rem + 0.3vw, 14px);    /* 次要正文 */
+  --text-md:   clamp(14px, 0.85rem + 0.4vw, 15px);   /* 默认正文 · 聊天气泡 */
+  --text-lg:   clamp(15px, 0.9rem + 0.5vw, 16px);    /* UI 默认 */
+  --text-xl:   clamp(16px, 0.95rem + 0.6vw, 18px);   /* 模态标题 */
+  --text-2xl:  clamp(18px, 1.05rem + 0.8vw, 20px);   /* 品牌名/个人主页姓名 */
+  --text-3xl:  clamp(20px, 1.15rem + 1vw, 24px);
+  --text-4xl:  clamp(24px, 1.3rem + 1.2vw, 28px);
+
+  /* ═══ 字重（限三档，禁用 700 刺眼粗体）═══ */
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+
+  /* ═══ 行高 ═══ */
+  --lh-tight:   1.3;    /* 标题 */
+  --lh-snug:    1.4;    /* 顶栏/菜单项 */
+  --lh-normal:  1.5;    /* UI 默认 */
+  --lh-relaxed: 1.6;    /* 正文/聊天气泡 */
+  --lh-loose:   1.8;    /* 个人简介长文 */
+
+  /* ═══ 字距（用 px 而非 em，clamp 字号下更稳）═══ */
+  --ls-tight:   -0.15px;
+  --ls-normal:  0;
+  --ls-wide:    0.5px;    /* 小标签/状态文字 */
+  --ls-wider:   1px;      /* 菜单项/按钮 */
+  --ls-widest:  2px;      /* 品牌名/大标题 */
+  --ls-mega:    3px;      /* 段标签(SECTION TITLE) */
+}
+
+/* ═══ 语义色（默认浅色主题值）═══
+   --ok-color / --danger 由各主题 :root 块定义（已有）；
+   这里补 --info / --warning 两个缺失的语义色，并在暗主题提亮 */
+:root {
+  --info:    #6B8FB5;        /* 莫兰迪雾蓝（信息提示） */
+  --warning: #C9985E;        /* 莫兰迪杏黄（警告提示） */
+}
+
+/* 暗色主题（星河/山月）：语义色提亮，深底上更通透 */
+html[data-theme="yuejian"],
+html[data-theme="custom"] {
+  --info:    #8FB0DC;
+  --warning: #E6BC85;
+}
+
+/* ═══ 字体偏好（issue #5）：html[data-font] 覆盖 --font-sans token ═══
+   每档「系统真身优先 + 开源等价兜底」：Web 端命中系统已授权字体（无分发问题），
+   Android 端回落打包的开源子集（@font-face 见 style.css，OFL 许可）。
+   用户选择具体字体时同时覆盖 --font-handwriting（2026-09-03 用户指示：
+   字体设置也覆盖女友气泡）；「系统默认」档不干预，女友保持霞鹜手写体 */
+html[data-font="fangsong"] {
+  --font-sans: 'STFangsong', 'FangSong', 'Zhuque Fangsong', serif;
+  --font-handwriting: 'STFangsong', 'FangSong', 'Zhuque Fangsong', serif;
+}
+html[data-font="song"] {
+  --font-sans: 'SimSun', 'STSong', 'Source Han Serif SC', serif;
+  --font-handwriting: 'SimSun', 'STSong', 'Source Han Serif SC', serif;
+}
+html[data-font="kai"] {
+  --font-sans: 'KaiTi', 'STKaiti', 'LXGW WenKai', serif;
+  --font-handwriting: 'KaiTi', 'STKaiti', 'LXGW WenKai', serif;
+}
+
+/* ═══ 女友色派生体系（issue #11）：主题不再手写角色色值 ═══
+   body[data-gf] 只定义 --gf-color-base 基础色相（自定义角色由 JS 注入 inline），
+   以下派生 token 全部从 base 计算——新角色 / 新主题天然全适配。
+   主题只声明派生系数；不支持 color-mix 的环境回落 style.css 的字面值。
+   系数从原 moon/shanyue 手写 override 色值迁移（wanwan 实测近似） */
+@supports (background: color-mix(in srgb, red, blue)) {
+  body[data-gf] {
+    /* --gf-color 派生必须在 body 层定义：var() 于声明元素求值，
+       :root 层拿不到 body[data-gf] 的 inline --gf-color-base */
+    --gf-color: var(--gf-color-base, #D993B4);
+    --gf-color-soft: color-mix(in srgb, var(--gf-color-base, #D993B4) 20%, transparent);
+    --gf-grad: linear-gradient(135deg,
+      color-mix(in srgb, var(--gf-color-base, #D993B4) 74%, white),
+      var(--gf-color-base, #D993B4));
+  }
+  /* 海港（暖米白浅色）：与珍珠潮汐同系，soft 稍实突出选中态 */
+  html[data-theme="harbor"] body[data-gf] {
+    --gf-color-soft: color-mix(in srgb, var(--gf-color-base, #D993B4) 22%, transparent);
+  }
+  /* 暗主题（星河/山月）：统一降饱和提亮适配深底 */
+  html[data-theme="yuejian"] body[data-gf] {
+    --gf-color: color-mix(in srgb, var(--gf-color-base, #D993B4) 60%, #DDE0EC);
+    --gf-color-soft: color-mix(in srgb, var(--gf-color-base, #D993B4) 24%, transparent);
+    --gf-grad: linear-gradient(135deg,
+      color-mix(in srgb, var(--gf-color-base, #D993B4) 55%, white),
+      color-mix(in srgb, var(--gf-color-base, #D993B4) 76%, #DDE0EC));
+    --avatar-ring: rgba(255, 255, 255, .25);   /* 暗底白圈降透明防刺眼 */
+  }
+  /* 自定义主题：gf 派生全部中性化（无色磨砂，不与用户壁纸冲突） */
+  html[data-theme="custom"] body[data-gf] {
+    --gf-color: rgba(244, 246, 250, .9);
+    --gf-color-soft: rgba(255, 255, 255, .12);
+    --gf-grad: linear-gradient(135deg, rgba(255, 255, 255, .22), rgba(255, 255, 255, .1));
+    --on-gf: #FFFFFF;   /* 磨砂底（壁纸经 blur 均化）上白字 */
+  }
+}
+@supports (background: color-mix(in srgb, red, blue)) {
+  /* 自定义角色的 on-gf 派生：基础色相的深色版（内置三角色保留手写精确值，
+     特异性 body[data-gf="id"] > body[data-gf]） */
+  body[data-gf] {
+    --on-gf: color-mix(in srgb, var(--gf-color-base, #D993B4) 22%, #2E2A30);
+  }
+}
+
+/* ═══ 自定义主题（issue #15 交互改版）：壁纸来自用户导入（IndexedDB，JS 内联应用）═══
+   无色磨砂：所有面板半透明白 + blur，不叠加任何主题色（避免与用户壁纸冲突）；
+   scrim 中性黑轻压；语义小点缀（在线绿/危险红）保留 */
+html[data-theme="custom"] {
+  --bg: #12141A;                        /* 壁纸加载前的兜底底色（中性近黑） */
+  --bg-soft: rgba(255, 255, 255, .07);
+  --card-bg: rgba(255, 255, 255, .08);
+  --card-border: rgba(255, 255, 255, .16);
+  --text-main: #F4F5F7;
+  --text-dim: rgba(244, 245, 247, .62);
+  --ok-color: #9BD8B4;
+  --bubble-gf: rgba(255, 255, 255, .12);          /* 她的气泡：无色磨砂 */
+  --bubble-gf-border: rgba(255, 255, 255, .18);
+  --input-bg: rgba(255, 255, 255, .10);
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, .35);
+  --shadow-tiny: 0 2px 10px rgba(0, 0, 0, .3);
+  --scrim: linear-gradient(rgba(8, 10, 16, .16), rgba(8, 10, 16, .26) 55%, rgba(8, 10, 16, .44));  /* 中性黑轻压 */
+  --scroll-thumb: rgba(255, 255, 255, .18);
+  --danger: #D89A9A;
+  --avatar-ring: rgba(255, 255, 255, .3);
+}
+html[data-theme="custom"] .overlay { background: rgba(4, 6, 12, .5); }
+html[data-theme="custom"] .modal-overlay { background: rgba(4, 6, 12, .55); }

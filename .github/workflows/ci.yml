@@ -1,0 +1,146 @@
+# 月见 Moonveil CI（moonveil · main）
+# 检查项与 docs/issue-pr-conventions.md §3.4「合并前自查清单」一一对应，把人工清单自动化的部分放这里：
+#   check job:
+#     ① JS 语法（node --check）
+#     ② 角色数据完整性（三位角色字段齐全 + prompt 含 PART A/B/Layer 0）
+#     ③ personas 源文件存在（从 data.js「记忆文件」注释动态提取，防改名失联）
+#     ④ 版本同步（index.html ?v= ↔ js/version.js，防 cache-bust 漂移）
+#     ⑤ build.sh md5 清单核对（新增 css/js 若被 index.html 引用而未进 md5 清单则拦截 —— tokens.css 教训）
+#     ⑥ 密钥泄露扫描（sk- 形态 token，隐私红线 §4.3）
+#   android-build job:
+#     npm ci → bash scripts/build.sh（完整复刻本地：www 同步含版本注入 → cap sync → assembleDebug → md5 校验）→ 上传 APK 产物
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # 支持手动触发
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true # 同分支新推送取消旧构建
+
+jobs:
+  check:
+    name: 工程检查（语法 / 数据 / 版本 / 清单 / 密钥）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: ① JS 语法检查
+        run: |
+          node --check js/version.js
+          node --check js/data.js
+          node --check js/app.js
+
+      - name: ② 角色数据完整性检查
+        run: |
+          node -e "
+          const fs = require('fs'), vm = require('vm');
+          const code = ['js/version.js', 'js/data.js'].map(f => fs.readFileSync(f, 'utf8')).join('\n');
+          const sandbox = { console };
+          vm.runInNewContext(code + '; globalThis.__GF = GIRLFRIENDS; globalThis.__LLM = LLM_CONFIG;', sandbox);
+          const gfs = sandbox.__GF;
+          const ids = Object.keys(gfs);
+          if (ids.length !== 3) { console.error('应有 3 位角色，实际: ' + ids.join(',')); process.exit(1); }
+          for (const id of ids) {
+            const g = gfs[id];
+            for (const field of ['name', 'tag', 'color', 'avatar', 'status', 'greeting', 'prompt', 'profile']) {
+              if (!g[field]) { console.error(id + ' 缺少字段: ' + field); process.exit(1); }
+            }
+            for (const field of ['signature', 'basic', 'bio', 'cards']) {
+              if (!(field in g.profile)) { console.error(id + ' profile 缺少: ' + field); process.exit(1); }
+            }
+            if (!g.prompt.includes('PART A') || !g.prompt.includes('PART B') || !g.prompt.includes('Layer 0')) {
+              console.error(id + ' prompt 缺少 PART A / PART B / Layer 0 结构'); process.exit(1);
+            }
+            console.log('  ' + g.name + ' (' + id + ') ok, prompt ' + g.prompt.length + ' 字');
+          }
+          if (!sandbox.__LLM.reasoning_effort) { console.error('LLM_CONFIG 缺少 reasoning_effort'); process.exit(1); }
+          console.log('角色数据完整性 OK');
+          "
+
+      - name: ③ personas 源文件存在检查（data.js 引用 ↔ 文件双向核对）
+        run: |
+          node -e "
+          const fs = require('fs');
+          const code = fs.readFileSync('js/data.js', 'utf8');
+          const refs = [...new Set([...code.matchAll(/记忆文件:\s*(personas\/[\w.-]+\.md)/g)].map(m => m[1]))];
+          if (refs.length !== 3) { console.error('data.js 中应引用 3 个人设文件，实际 ' + refs.length + ' 个: ' + refs.join(', ')); process.exit(1); }
+          for (const f of refs) {
+            if (!fs.existsSync(f)) { console.error('缺少人设文件: ' + f + '（data.js 引用了它）'); process.exit(1); }
+            console.log('  ' + f + ' ok');
+          }
+          "
+
+      - name: ④ 版本同步检查（index.html ?v= ↔ js/version.js）
+        run: |
+          node -e "
+          const fs = require('fs');
+          const v = fs.readFileSync('js/version.js', 'utf8').match(/APP_VERSION = '([^']+)'/)[1];
+          const h = fs.readFileSync('index.html', 'utf8');
+          const stale = [...h.matchAll(/(?:css|js)\/[\w.-]+\?v=([\w.]+)/g)].filter(m => m[1] !== v);
+          if (stale.length) { console.error('index.html 存在未同步的 ?v= 版本号（应全部为 ' + v + '）—— 跑一次 bash scripts/build.sh 即可注入:\n' + stale.map(m => '  ' + m[0]).join('\n')); process.exit(1); }
+          console.log('版本号同步一致: v' + v);
+          "
+
+      - name: ⑤ build.sh md5 清单核对（index.html 引用的本地 css/js 必须在清单里）
+        run: |
+          node -e "
+          const fs = require('fs');
+          const h = fs.readFileSync('index.html', 'utf8');
+          const build = fs.readFileSync('scripts/build.sh', 'utf8');
+          const refs = [...new Set([...h.matchAll(/(?:css|js)\/[\w.-]+\.(?:css|js)/g)].map(m => m[0]))];
+          const covered = f => build.includes(\"'\" + f + \"'\") || build.includes('\"' + f + '\"');
+          const missing = refs.filter(f => !covered(f));
+          if (missing.length) { console.error('以下文件被 index.html 引用但不在 build.sh 的 md5 校验清单中（请补录，见 §3.4）:\n' + missing.map(f => '  ' + f).join('\n')); process.exit(1); }
+          console.log('md5 清单核对 OK（' + refs.length + ' 个引用全部覆盖）');
+          "
+
+      - name: ⑥ 密钥泄露扫描（隐私红线 §4.3）
+        run: |
+          if git grep -nE 'sk-[A-Za-z0-9]{20,}' -- ':!node_modules' ':!www' ':!*.lock' | grep -v 'sk-\.\.\.'; then
+            echo "发现疑似 API Key 泄露，请移除后重试"; exit 1
+          fi
+          echo "密钥扫描 OK"
+
+  android-build:
+    name: Android 构建（Debug APK）
+    runs-on: ubuntu-latest
+    needs: check # 检查不过不浪费构建时间
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 赋予 gradlew 可执行权限
+        run: chmod +x android/gradlew
+
+      # build.sh 内 JAVA_HOME 取 ${JAVA_HOME:-C:/...}，CI 已由 setup-java 设置
+      - name: 构建 Debug APK（复用 scripts/build.sh）
+        run: bash scripts/build.sh
+
+      - name: 上传 APK 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: moonveil-debug-apk
+          path: AI-GF.apk
+          retention-days: 14

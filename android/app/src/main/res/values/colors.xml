@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- styles.xml 引用的主题色（与 Web 端 css/style.css 的莫兰迪令牌保持一致） -->
+<resources>
+    <color name="colorPrimary">#A292D9</color>
+    <color name="colorPrimaryDark">#8E7FB8</color>
+    <color name="colorAccent">#D993B4</color>
+</resources>

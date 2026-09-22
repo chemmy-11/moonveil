@@ -1,0 +1,65 @@
+name: 📋 任务 / 需求
+description: 功能开发、界面打磨、人设内容、工程债 —— roadmap 编号项或对话中暴露的具体任务
+body:
+  - type: markdown
+    attributes:
+      value: |
+        标题格式：`类型: 一句话描述`，类型取以下之一（对应 GitHub label，建好后请补打）：
+
+        | 类型 | 用途 |
+        |---|---|
+        | `feat` | 新功能 |
+        | `ui` | 界面打磨 |
+        | `persona` | 人设/内容调整 |
+        | `infra` | 工程债/构建/发布 |
+        | `idea` | 想法、未对齐方向 |
+
+        对应 roadmap 编号项（C1、B4、G1…）请在「背景」里注明。纯想法建议先留
+        `docs/roadmap.md` 对齐后再拆任务。
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: 类型
+      options:
+        - feat（新功能）
+        - ui（界面打磨）
+        - persona（人设/内容）
+        - infra（工程债/构建/发布）
+        - idea（想法）
+    validations:
+      required: true
+
+  - type: input
+    id: roadmap
+    attributes:
+      label: roadmap 编号
+      description: 如 C2 / B4 / G1；无对应编号留空
+      placeholder: "如 G2"
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: roadmap 编号或对话中暴露的痛点
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 方案要点
+      description: 大概思路即可；动手前在此补齐方案
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 验收标准
+      description: 做到什么程度算完成（端 / 主题 / 操作路径）
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: 影响面
+      description: 预计改动的文件/机制（如 js/app.js 记忆模块 + personas）
+      placeholder: （可后补）

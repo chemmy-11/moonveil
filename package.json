@@ -1,0 +1,23 @@
+{
+  "name": "ai-gf",
+  "version": "1.0.0",
+  "description": "月见 Moonveil — AI 陪伴实验场（DeepSeek 驱动，纯前端 + Capacitor）",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "dev": "node scripts/dev-server.js"
+  },
+  "dependencies": {
+    "@capacitor-community/file-opener": "^6.0.1",
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/app": "^6.0.3",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/filesystem": "^6.0.4",
+    "@capacitor/keyboard": "^6.0.4",
+    "@capacitor/status-bar": "^6.0.3",
+    "@capgo/capacitor-updater": "^6.50.2"
+  },
+  "devDependencies": {}
+}

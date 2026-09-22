@@ -1,0 +1,76 @@
+name: 🐛 缺陷报告
+description: 工程缺陷 —— UI 异常、功能 bug、构建/发布链路问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **开 issue 前先分流**：对话质量问题（人设漂移、语气失真、记忆错乱等「改 prompt 能修」的）
+        请记入 personas 的 Correction 层 + 复盘沉淀，**不要开 issue**（见 `docs/issue-pr-conventions.md` §2.1）。
+
+        标题格式：`bug: 一句话描述`（尽量把根因写进标题，如 `bug: 移动端点开存档没反应（弹窗渲染在视口外）`）。
+        本仓为私有仓，证据可贴私人内容，但**勿外传到任何公开渠道**。
+
+  - type: dropdown
+    id: platform
+    attributes:
+      label: 端
+      options:
+        - Web
+        - APK
+        - 双端
+    validations:
+      required: true
+
+  - type: dropdown
+    id: theme
+    attributes:
+      label: 主题
+      description: 复现时所处的主题
+      options:
+        - 珍珠潮汐
+        - 海港
+        - 月见
+        - 自定义主题
+        - 与主题无关
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: 版本号
+      description: 对应 js/version.js（侧栏/菜单可见）
+      placeholder: "如 1.7.2"
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: 现象
+      description: 发生了什么、预期是什么
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现
+      description: 操作步骤（注明端、主题、版本号）
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: 证据
+      description: 截图 / Console 报错 / 消息原文（可拖拽上传）
+      placeholder: （可后补）
+
+  - type: textarea
+    id: root-cause
+    attributes:
+      label: 根因与修法
+      description: 动手前先在这里补齐根因分析，防止上下文散在会话里丢失
+      placeholder: （可后补）

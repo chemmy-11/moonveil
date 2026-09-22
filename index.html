@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>月见 Moonveil</title>
+<link rel="icon" type="image/png" href="assets/icons/favicon.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="stylesheet" href="css/tokens.css?v=0.2.8">
+<link rel="stylesheet" href="css/style.css?v=0.2.8">
+  <link rel="stylesheet" href="css/mobile.css?v=0.2.8">
+</head>
+<body>
+
+<!-- 壁纸层（随主题切换 light/harbor） -->
+<div id="wall"></div>
+
+<div class="app" id="app">
+
+  <!-- ════ 顶栏 ════ -->
+  <header id="top-bar">
+    <button class="gf-info" id="gf-info" title="查看她的主页">
+      <img class="gf-avatar" id="top-avatar" src="assets/avatar.png" alt="">
+      <div class="gf-meta">
+        <div class="gf-name" id="top-name">苏晚晚</div>
+        <div class="gf-status" id="top-status"><span class="status-dot"></span><span id="top-status-text">在线</span></div>
+      </div>
+    </button>
+    <div class="top-actions">
+      <button class="icon-btn" id="sidebar-toggle" title="功能栏" aria-label="功能栏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
+      </button>
+      <button class="icon-btn" id="theme-toggle" title="切换主题" aria-label="切换主题">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div id="sidebar-overlay" class="overlay hidden"></div>
+  <div class="main-layout" id="main-layout">
+
+    <!-- ════ 侧栏：三位女友列表（桌面端） ════ -->
+    <aside id="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-logo">🌙</div>
+        <div class="sidebar-brand-text">
+          <div class="brand-title">月见</div>
+          <div class="brand-sub">Moonveil · AI 陪伴实验场</div>
+        </div>
+      </div>
+      <div class="sidebar-section-title">我的女友</div>
+      <div id="gf-list"><!-- 由 js 渲染女友卡片 --></div>
+      <div class="sidebar-section-title">功能</div>
+      <div class="sidebar-actions">
+        <button class="sidebar-action" id="sb-backup"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg></span>存档管理</button>
+        <button class="sidebar-action" id="sb-update"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.3"/><path d="M21 3v6h-6"/></svg></span>检查更新</button>
+        <button class="sidebar-action" id="sb-wall"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 13l4-4 4 3 5-5 5 5"/><circle cx="9" cy="7.5" r="1.2"/></svg></span>自定义壁纸</button>
+        <button class="sidebar-action" id="sb-font"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 12 4l8 16"/><path d="M7.5 13h9"/></svg></span>字体</button>
+        <button class="sidebar-action" id="sb-api"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg></span>设置 API Key</button>
+        <button class="sidebar-action danger" id="sb-clear"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/><path d="M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/><path d="M10 11v6M14 11v6"/></svg></span>清空当前对话</button>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-footer-row" id="api-status-row">
+          <span id="api-status-text">API Key 未配置</span>
+        </div>
+        <div class="sidebar-footer-row dim">v<span id="version-text">1.0.0</span></div>
+      </div>
+    </aside>
+
+    <!-- ════ 主聊天区 ════ -->
+    <main id="chat-main">
+      <section id="chat-view" class="view active">
+        <div id="dialogue-area">
+          <!-- 消息气泡由 js 渲染 -->
+          <div class="msg system" id="chat-placeholder">
+            <div class="msg-text">点开左侧的女友开始聊天吧</div>
+          </div>
+        </div>
+        <!-- 引用记忆条（issue #2 ①：从主页「聊这个」发起，微信引用样式） -->
+        <div id="quote-bar" class="hidden">
+          <div class="quote-text" id="quote-text"></div>
+          <button class="quote-close" id="quote-close" aria-label="取消引用">×</button>
+        </div>
+        <!-- 图片预览条（issue #8：发送前缩略图确认，可移除重选；第一期每条消息限 1 张） -->
+        <div id="img-preview-bar" class="hidden">
+          <img id="img-preview-thumb" alt="待发送图片">
+          <button id="img-preview-remove" title="移除图片" aria-label="移除图片">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="input-area">
+          <button id="scroll-bottom-btn" title="回到最新" aria-label="回到最新消息">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+          </button>
+          <!-- 语音/键盘切换（issue #38 v1：微信式左置切换键） -->
+          <button id="voice-mode-btn" title="语音输入" aria-label="切换语音输入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
+          <textarea id="player-input" rows="1" placeholder="写点什么吧…"></textarea>
+          <!-- 语音模式：按住说话（松手 ASR 转文字发送；滑出取消） -->
+          <button id="hold-talk-btn" class="hidden"><span class="ht-label">按住 说话</span></button>
+          <!-- 「+」聚合键（issue #23）：发图片 / 联网搜索，置于发送键左侧 -->
+          <button id="input-plus-btn" title="更多（发图片 / 联网搜索）" aria-label="更多功能" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+          <button id="send-btn" title="发送" aria-label="发送"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3 3l18 9-18 9 4-9z"/></svg></button>
+          <input type="file" id="img-file-input" accept="image/*" style="display:none">
+          <div id="input-plus-menu" class="hidden">
+            <button class="input-plus-item" id="plus-img">
+              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.4-4.4a2 2 0 0 0-2.8 0L5 19.4"/></svg></span>
+              <span class="ipt-name">发图片</span>
+            </button>
+            <button class="input-plus-item" id="plus-search">
+              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.7 2.6 4 5.7 4 9s-1.3 6.4-4 9c-2.7-2.6-4-5.7-4-9s1.3-6.4 4-9z"/></svg><span class="ipt-dot"></span></span>
+              <span class="ipt-name">联网搜索<span class="plus-search-state">关</span></span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+  </div>
+
+  <!-- ════ 移动端底部导航：三位女友 tab ════ -->
+
+</div>
+
+<!-- ════ 个人主页 ════ -->
+<div id="profile-overlay" class="overlay hidden"></div>
+<div id="profile-panel" class="profile-panel hidden">
+  <button class="profile-close" id="profile-close" aria-label="关闭">✕</button>
+  <div class="profile-header">
+    <img class="profile-avatar" id="profile-avatar" src="" alt="">
+    <div class="profile-name" id="profile-name"></div>
+    <div class="profile-tag" id="profile-tag"></div>
+    <div class="profile-signature" id="profile-signature"></div>
+    <div class="profile-stats" id="profile-stats"><!-- 统计条由 js 渲染：回忆/喜好/相伴天数 --></div>
+  </div>
+  <div class="profile-body" id="profile-body"><!-- 信息卡由 js 渲染 --></div>
+</div>
+
+<!-- ════ API Key 弹窗 ════ -->
+<div id="api-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-title">配置 DeepSeek API Key</div>
+    <p class="modal-desc">对话由 DeepSeek 大模型实时生成。Key 只保存在你的浏览器本地，不会上传到任何服务器。</p>
+    <!-- type=text + text-security：Android 不触发安全键盘（方便粘贴 API Key），仍以圆点遮挡 -->
+    <label class="modal-field-label" for="api-key-input">DeepSeek API Key</label>
+    <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <label class="modal-field-label" for="tavily-key-input">网络搜索 Tavily Key（可选）</label>
+    <input type="text" id="tavily-key-input" placeholder="tvly-...，填写后聊天输入区可开启联网搜索" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <label class="modal-field-label" for="step-key-input">朗读 · 阶跃 StepFun Key（可选，优先于千问朗读）</label>
+    <input type="text" id="step-key-input" placeholder="在 platform.stepfun.com 获取；经典女声朗读" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <label class="modal-field-label" for="dashscope-key-input">语音 · 千问 DashScope Key（可选）</label>
+    <input type="text" id="dashscope-key-input" placeholder="sk-...（百炼控制台获取），填写后可发语音、她可朗读" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <div class="modal-buttons">
+      <button class="btn secondary" id="api-skip-btn">跳过</button>
+      <button class="btn primary" id="api-save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 创建角色弹窗 ════ -->
+<div id="create-overlay" class="modal-overlay hidden">
+  <div id="create-modal" class="modal">
+  <div class="modal-title">✨ 创建专属角色</div>
+  <p class="modal-desc">告诉 AI「TA 是谁、什么性格、怎么说话」，它会把 TA 变成一位能聊天的角色。<b>描述越具体，TA 越像。</b></p>
+  <label class="modal-field-label" for="create-name">角色名 <em class="req">*</em></label>
+  <input type="text" id="create-name" placeholder="给 TA 起个名字，如：林夏、阿澈…">
+  <label class="modal-field-label">头像</label>
+  <div class="avatar-picker" id="avatar-picker"><!-- 由 js 渲染：emoji 头像 + 上传自定义图片 --></div>
+  <input type="file" id="create-avatar-input" accept="image/*" style="display:none">
+  <label class="modal-field-label" for="create-desc">描述 TA <em class="req">*</em></label>
+  <textarea id="create-desc" placeholder="TA 是什么身份、什么性格、说话什么风格？&#10;如：温柔冷静的图书管理员，说话轻声细语，喜欢旧书和下雨天"></textarea>
+  <div class="create-presets">
+    <div class="preset-chips">
+      <button class="preset-chip" data-preset="冷静理性的医生，温和有距离感，偶尔冷幽默">冷静医生</button>
+      <button class="preset-chip" data-preset="高冷学霸，外冷内热，话不多但句句在点">高冷学霸</button>
+      <button class="preset-chip" data-preset="温柔知性的图书管理员，轻声细语，喜欢旧书和下雨天">图书管理员</button>
+      <button class="preset-chip" data-preset="元气满满的运动系女生，活力四射，直爽爱笑">运动系少女</button>
+      <button class="preset-chip" data-preset="文艺忧郁的摄影师，话不多，习惯用镜头看世界">文艺摄影师</button>
+      <button class="preset-chip" data-preset="快意恩仇的古风侠女，豪爽仗义，爱恨分明">古风侠女</button>
+      <button class="preset-chip" data-preset="强势干练的职场御姐，事业心强，雷厉风行">职场御姐</button>
+      <button class="preset-chip" data-preset="呆萌天然呆的理工科学生，反应慢半拍，真诚可爱">呆萌学霸</button>
+      <button class="preset-chip" data-preset="慵懒猫系少女，社恐爱睡觉，熟了才话多">慵懒猫系</button>
+      <button class="preset-chip" data-preset="神秘冷艳的乐队主唱，话少，外冷内热">乐队主唱</button>
+      <button class="preset-chip" data-preset="腹黑幽默，表面温和，爱调侃和恶作剧">腹黑幽默</button>
+      <button class="preset-chip" data-preset="开朗话痨的探店博主，分享欲爆棚，自来熟">探店博主</button>
+    </div>
+  </div>
+  <div class="field-label-row">
+    <label class="modal-field-label" for="create-material">补充素材（选填）</label>
+    <button class="attach-plus" id="create-attach-btn" type="button" title="添加附件（推荐 .md / .txt）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+  </div>
+  <input type="file" id="create-attach-input" accept=".txt,.md,.json,.csv,.eml,.html,.log,.srt" multiple style="display:none">
+  <textarea id="create-material" placeholder="粘贴 TA 说过的话、聊天记录、文字设定…越多越像&#10;推荐 Markdown（.md / .txt）：结构化素材生成效果更好"></textarea>
+  <details class="material-guide">
+    <summary>素材怎么写？照这个模板填效果最好</summary>
+    <pre>## 身份背景
+（TA 是谁、做什么、经历过什么）
+
+## 性格要点
+- （2~4 条性格底色）
+- （对陌生人和熟人的差别）
+
+## 说话示例
+TA：「（一句原话，最能代表语气）」
+TA：「（再来一句）」
+
+## 边界雷区
+- （绝对不说的话 / 不做的事）</pre>
+    <p class="material-guide-tip">也可以直接上传 .md / .txt 附件，会自动按章节并入素材。</p>
+  </details>
+  <div class="create-hint" id="create-hint"></div>
+  <div class="modal-buttons">
+    <button class="btn secondary" id="create-cancel-btn">取消</button>
+    <button class="btn primary" id="create-submit-btn">✨ 生成角色</button>
+  </div>
+  </div>
+</div>
+
+<!-- ════ 检查更新弹窗 ════ -->
+<div id="update-overlay" class="modal-overlay hidden">
+  <div id="update-modal" class="modal hidden">
+    <div class="modal-title">发现新版本 ✨</div>
+    <p class="modal-desc" id="update-desc" style="white-space: pre-line;"></p>
+    <div id="update-progress" class="update-progress hidden">
+      <div class="update-progress-track"><div class="update-progress-bar" id="update-progress-bar"></div></div>
+      <span id="update-progress-text">下载中 0%</span>
+    </div>
+    <div class="modal-buttons">
+      <button class="btn secondary" id="update-copy-btn">📋 复制链接</button>
+      <button class="btn secondary" id="update-cancel-btn">稍后再说</button>
+      <button class="btn primary" id="update-download-btn">立即更新</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 字体选择弹窗（issue #5） ════ -->
+<div id="font-overlay" class="modal-overlay hidden">
+  <div id="font-modal" class="modal hidden">
+    <div class="modal-title">字体</div>
+    <p class="modal-desc">界面与她的气泡都会使用所选字体；「系统默认」下她的气泡保持手写体。</p>
+    <div class="font-options" id="font-options"><!-- 由 js 渲染四档选项 --></div>
+  </div>
+</div>
+
+<!-- ════ 自定义壁纸取景弹窗（issue #15） ════ -->
+<div id="wall-overlay" class="modal-overlay hidden">
+  <div id="wall-modal" class="modal hidden">
+    <div class="modal-title">自定义壁纸</div>
+    <p class="modal-desc">选择图片裁剪后会创建为一个「自定义」主题，加入主题循环。仅保存在本机。</p>
+    <div class="wall-crop" id="wall-crop">
+      <canvas id="wall-canvas"></canvas>
+      <div class="wall-crop-hint" id="wall-crop-hint">点下方「选择图片」开始</div>
+    </div>
+    <div class="modal-buttons" style="justify-content: flex-start;">
+      <button class="btn secondary" id="wall-pick-btn">🖼 选择图片</button>
+      <button class="btn secondary" id="wall-reset-btn" style="display:none;">恢复主题壁纸</button>
+      <button class="btn primary" id="wall-apply-btn" style="display:none;">应用壁纸</button>
+    </div>
+    <input type="file" id="wall-file-input" accept="image/*" style="display:none">
+  </div>
+</div>
+
+<!-- ════ 图片放大预览（issue #8：点气泡图片放大，点击任意处关闭） ════ -->
+<div id="lightbox-overlay" class="lightbox-overlay hidden">
+  <img id="lightbox-img" alt="图片预览">
+</div>
+
+<!-- ════ 存档管理 ════ -->
+<div id="backup-overlay" class="modal-overlay hidden">
+  <div id="backup-modal" class="modal hidden">
+    <div class="modal-title">存档管理</div>
+    <p class="modal-desc">快照保存在本机，随时可回滚。换机或卸载前，先「导出存档文件」保存一份 .md 备份（手机端存到 Documents 目录，电脑端直接下载）。</p>
+    <div id="save-slots" class="save-slots"><!-- 由 js 渲染三个快照槽 --></div>
+    <div class="migrate-toggle-row">
+      <button class="btn secondary" id="migrate-toggle-btn" type="button">跨设备迁移 / 备份文件 ▾</button>
+    </div>
+    <div id="migrate-section" class="migrate-section hidden">
+      <div class="modal-buttons" style="justify-content: flex-start;">
+        <button class="btn primary" id="backup-export-btn">⬇️ 导出存档文件</button>
+        <button class="btn secondary" id="backup-import-btn">⬆️ 导入存档文件</button>
+        <input type="file" id="backup-file-input" accept=".json,.md,.txt,application/json,text/markdown,text/plain" style="display:none">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 消息右键菜单 ════ -->
+<div id="msg-menu" class="msg-menu hidden">
+  <button class="msg-menu-item" id="msg-copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>复制</button>
+  <button class="msg-menu-item danger" id="msg-delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></svg>删除</button>
+</div>
+
+<!-- ════ 记忆条目菜单（主页卡片 · 长按/右键，菜单项由 js 动态填充） ════ -->
+<div id="memory-menu" class="msg-menu hidden"></div>
+
+<!-- ════ SVG 符号表（issue #26：气泡行内操作等高频图标 defs 复用，替代逐条内联） ════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="ic-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+  <symbol id="ic-del" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6"/></symbol>
+</defs></svg>
+
+<!-- ════ 轻提示 ════ -->
+<div id="toast" class="hidden"></div>
+
+<script src="js/version.js?v=0.2.8"></script>
+<script src="js/data.js?v=0.2.8"></script>
+<script src="js/app.js?v=0.2.8"></script>
+</body>
+</html>

@@ -1402,7 +1402,7 @@ const App = {
     }
     return clone;
   },
-  // ── 角色：内置三位（data.js GIRLFRIENDS）+ 用户自建角色（localStorage） ──
+  // ── 角色：内置两位（data.js GIRLFRIENDS）+ 用户自建角色（localStorage） ──
   allGfs() {
     return Object.assign({}, GIRLFRIENDS, this.state.customGfs);
   },

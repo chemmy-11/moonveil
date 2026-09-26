@@ -61,11 +61,6 @@ html[data-theme="shanyue"] body[data-gf="wanwan"] {
   --gf-color-soft: rgba(221, 167, 194, .22);
   --gf-grad: linear-gradient(135deg, #EBBFD6, #DFABC6);
 }
-html[data-theme="shanyue"] body[data-gf="linlin"] {
-  --gf-color: #B8A8EC;
-  --gf-color-soft: rgba(184, 168, 236, .22);
-  --gf-grad: linear-gradient(135deg, #C8BBF2, #B8A8EC);
-}
 html[data-theme="shanyue"] body[data-gf="tangtang"] {
   --gf-color: #EFC48A;
   --gf-color-soft: rgba(239, 196, 138, .24);

@@ -38,7 +38,7 @@
 | `bug` | 缺陷 | `bug: 移动端点开存档没反应（弹窗渲染在视口外）` |
 | `feat` | 新功能 | `feat: 女友随机生活事件（G2）` |
 | `ui` | 界面打磨 | `ui: 主题切换交叉淡化（A5）` |
-| `persona` | 人设/内容调整 | `persona: 霖记忆源文件扩充考研线` |
+| `persona` | 人设/内容调整 | `persona: 苏晚晚记忆源文件扩充花店日常线` |
 | `infra` | 工程债/构建/发布 | `infra: package.json 的 npm run build 引用失效` |
 | `idea` | 想法、未对齐方向 | `idea: 女友之间互相聊起玩家` |
 

@@ -87,12 +87,6 @@ body[data-gf="wanwan"] {
   --gf-grad: linear-gradient(135deg, #E4AFC9, #D993B4);
   --on-gf: #4A3440;
 }
-body[data-gf="linlin"] {
-  --gf-color-base: #E3A9C4;         /* 霖 樱藕粉 */
-  --gf-color-soft: rgba(227, 169, 196, .2);
-  --gf-grad: linear-gradient(135deg, #F0C3D8, #E3A9C4);
-  --on-gf: #4A3342;                 /* 樱藕粉底上的深梅字（保证对比） */
-}
 body[data-gf="tangtang"] {
   --gf-color-base: #E0B06C;         /* 唐糖 杏橙 */
   --gf-color-soft: rgba(224, 176, 108, .22);

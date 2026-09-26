@@ -2,7 +2,7 @@
 # 检查项与 docs/issue-pr-conventions.md §3.4「合并前自查清单」一一对应，把人工清单自动化的部分放这里：
 #   check job:
 #     ① JS 语法（node --check）
-#     ② 角色数据完整性（三位角色字段齐全 + prompt 含 PART A/B/Layer 0）
+#     ② 角色数据完整性（两位角色字段齐全 + prompt 含 PART A/B/Layer 0）
 #     ③ personas 源文件存在（从 data.js「记忆文件」注释动态提取，防改名失联）
 #     ④ 版本同步（index.html ?v= ↔ js/version.js，防 cache-bust 漂移）
 #     ⑤ build.sh md5 清单核对（新增 css/js 若被 index.html 引用而未进 md5 清单则拦截 —— tokens.css 教训）
@@ -48,7 +48,7 @@ jobs:
           vm.runInNewContext(code + '; globalThis.__GF = GIRLFRIENDS; globalThis.__LLM = LLM_CONFIG;', sandbox);
           const gfs = sandbox.__GF;
           const ids = Object.keys(gfs);
-          if (ids.length !== 3) { console.error('应有 3 位角色，实际: ' + ids.join(',')); process.exit(1); }
+          if (ids.length !== 2) { console.error('应有 2 位角色，实际: ' + ids.join(',')); process.exit(1); }
           for (const id of ids) {
             const g = gfs[id];
             for (const field of ['name', 'tag', 'color', 'avatar', 'status', 'greeting', 'prompt', 'profile']) {
@@ -72,7 +72,7 @@ jobs:
           const fs = require('fs');
           const code = fs.readFileSync('js/data.js', 'utf8');
           const refs = [...new Set([...code.matchAll(/记忆文件:\s*(personas\/[\w.-]+\.md)/g)].map(m => m[1]))];
-          if (refs.length !== 3) { console.error('data.js 中应引用 3 个人设文件，实际 ' + refs.length + ' 个: ' + refs.join(', ')); process.exit(1); }
+          if (refs.length !== 2) { console.error('data.js 中应引用 2 个人设文件，实际 ' + refs.length + ' 个: ' + refs.join(', ')); process.exit(1); }
           for (const f of refs) {
             if (!fs.existsSync(f)) { console.error('缺少人设文件: ' + f + '（data.js 引用了它）'); process.exit(1); }
             console.log('  ' + f + ' ok');

@@ -7,7 +7,7 @@
 
 ## 一、项目是什么
 
-**月见（Moonveil）** 是一个 DeepSeek 角色扮演与情感陪伴实验场：三位性格各异的 AI 角色（苏晚晚 / 霖 / 唐糖），微信式聊天 UI，带人格系统、记忆体系、消息节奏控制。纯前端（原生 HTML/CSS/JS，无框架）+ Capacitor 打包 Android APK。
+**月见（Moonveil）** 是一个 DeepSeek 角色扮演与情感陪伴实验场：两位性格各异的 AI 角色（苏晚晚 / 唐糖），微信式聊天 UI，带人格系统、记忆体系、消息节奏控制。纯前端（原生 HTML/CSS/JS，无框架）+ Capacitor 打包 Android APK。
 
 **三条设计原则**（做任何功能前先读一遍）：
 

@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════
-   AI-GF 桌面端样式 — 淡雅莫兰迪 · 雾面毛玻璃
-   珍珠潮汐 / 海港 / 星河 三主题，全主题按女友主题色
+   AI-GF 桌面端样式 — 淡雅莫兰迪 · 纯色分层
+   纯白 / 纯黑 / 自定义 三主题，全主题按女友主题色（issue #48）
    ═══════════════════════════════════════════════════════════ */
 
 /* ─── 设计令牌 ─── */
@@ -38,25 +38,34 @@ button, input, textarea, select {
   font-family: inherit;
 }
 
+/* ═══ 点击反馈精致化（issue #51）═══
+   Android WebView 默认 tap-highlight 是系统半透明蓝、焦点 outline 也是蓝——
+   与莫兰迪低饱和语言冲突。全局关闭系统高亮，按压反馈统一为轻降不透明度
+   （已有独立 :active scale 的按钮自然叠加）；键盘焦点保留 :focus-visible */
+* { -webkit-tap-highlight-color: transparent; }
+button:active:not(:disabled) { opacity: .82; }
+button:focus { outline: none; }
+button:focus-visible { outline: 2px solid var(--gf-color); outline-offset: 2px; }
+
 :root {
-  /* 珍珠潮汐（默认浅色主题）— 珍珠白雾蓝底 */
-  --bg: #F4F6F8;
-  --bg-soft: rgba(246, 247, 250, .55);
-  --card-bg: rgba(255, 255, 255, .58);
-  --card-border: rgba(255, 255, 255, .72);
-  --text-main: #41485A;            /* 深灰蓝，比纯黑柔和 */
-  --text-dim: #727C8E;             /* 雾灰（保证小字可读性） */
-  --ok-color: #6FA98A;             /* 已配置状态·莫兰迪青绿 */
-  --bubble-gf: rgba(255, 255, 255, .78);
-  --bubble-gf-border: rgba(146, 156, 180, .16);
-  --input-bg: rgba(255, 255, 255, .7);
-  --shadow-soft: 0 8px 30px rgba(96, 100, 130, .08);
-  --shadow-tiny: 0 2px 10px rgba(96, 100, 130, .07);
-  --wall: url('../assets/chat-light.webp');
-  /* 遮罩上淡下浓：让壁纸在顶部呼吸 */
-  --scrim: linear-gradient(rgba(244, 246, 248, .4), rgba(244, 246, 248, .58) 55%, rgba(244, 246, 248, .78));
-  --scroll-thumb: rgba(96, 100, 130, .16);
-  --danger: #C98A8A;               /* 莫兰迪珊瑚红 */
+  /* 纯白（默认浅色主题）— 纸感纯白 + 浅灰分层（issue #48） */
+  --bg: #FFFFFF;
+  --bg-soft: rgba(0, 0, 0, .045);            /* hover/按压：中性淡染 */
+  --card-bg: #F5F5F7;                         /* 面板第一层：浅灰 */
+  --card-border: rgba(0, 0, 0, .08);
+  --text-main: #1D1D1F;            /* 近黑，比纯黑柔和 */
+  --text-dim: #86868B;             /* 中性灰（白底小字可读） */
+  --ok-color: #5F9E7F;             /* 已配置状态·莫兰迪青绿（白底压深一档） */
+  --bubble-gf: #F5F5F7;            /* 她的气泡：浅灰（iMessage 式对比布局） */
+  --bubble-gf-border: rgba(0, 0, 0, .05);
+  --input-bg: #F5F5F7;
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, .07);
+  --shadow-tiny: 0 2px 10px rgba(0, 0, 0, .05);
+  --wall: none;                    /* 纯色主题无壁纸（issue #48） */
+  --scrim: none;
+  --scroll-thumb: rgba(0, 0, 0, .18);
+  --danger: #C4695F;               /* 莫兰迪珊瑚（白底压深可读） */
+  color-scheme: light;
 
   --radius-lg: 22px;
   --radius-bubble: 20px;           /* 气泡大圆角 */
@@ -79,7 +88,7 @@ button, input, textarea, select {
   --gf-color-soft: rgba(217, 147, 180, .2);
   --gf-grad: linear-gradient(135deg, #E4AFC9, #D993B4);
   --on-gf: #4A3440;                 /* 雾粉底上的深梅字（保证对比） */
-  --avatar-ring: rgba(255, 255, 255, .55);   /* 头像描边：浅色雾白 */
+  --avatar-ring: rgba(0, 0, 0, .1);   /* 头像描边：浅色中性（纯白底可见） */
 }
 body[data-gf="wanwan"] {
   --gf-color-base: #D993B4;         /* 苏晚晚 雾粉 */
@@ -88,58 +97,38 @@ body[data-gf="wanwan"] {
   --on-gf: #4A3440;
 }
 body[data-gf="tangtang"] {
-  --gf-color-base: #E0B06C;         /* 唐糖 杏橙 */
+  --gf-color-base: #E0B06C;         /* 唐苓 杏橙 */
   --gf-color-soft: rgba(224, 176, 108, .22);
   --gf-grad: linear-gradient(135deg, #ECC38B, #E0B06C);
   --on-gf: #4E4022;                 /* 杏橙底上的深杏字（保证对比） */
 }
 
-/* 海港主题（暖米白，更温润） */
-html[data-theme="harbor"] {
-  --bg: #F5F2EC;
-  --bg-soft: rgba(243, 239, 232, .58);
-  --card-bg: rgba(255, 254, 251, .5);
-  --card-border: rgba(255, 255, 255, .6);
-  --text-main: #4B463F;
-  --text-dim: #847C6E;
-  --ok-color: #7FA98A;
-  --bubble-gf: rgba(255, 254, 251, .8);
-  --bubble-gf-border: rgba(160, 148, 130, .16);
-  --input-bg: rgba(255, 254, 251, .72);
-  --shadow-soft: 0 8px 30px rgba(120, 100, 80, .1);
-  --shadow-tiny: 0 2px 10px rgba(120, 100, 80, .08);
-  --wall: url('../assets/chat-harbor.webp');
-  --scrim: linear-gradient(rgba(245, 242, 236, .38), rgba(245, 242, 236, .56) 55%, rgba(245, 242, 236, .78));
-  --scroll-thumb: rgba(120, 100, 80, .16);
-}
-
-/* ═══ 月见主题（暗色 · 厚涂壁纸）═══
-   内部 key: yuejian；显示名「月见」——与品牌同名，接替星河/山月的夜晚生态位
-   壁纸：用户提供（assets/chat-yuejian.webp，抽象厚涂 · 深藏青/灰蓝分割 + 米白「双眼」） */
-html[data-theme="yuejian"] {
-  --bg: #1B2436;                       /* 深藏青（壁纸左侧压暗） */
-  --bg-soft: rgba(38, 51, 77, .55);
-  --card-bg: rgba(34, 45, 70, .62);    /* 毛玻璃面板底 */
-  --card-border: rgba(200, 210, 235, .15);
-  --text-main: #EFF0E8;                /* 米白（呼应壁纸色块） */
-  --text-dim: #B8BFCF;
+/* ═══ 纯黑主题（OLED · 真黑底 + 深灰分层）═══
+   issue #48：接替月见的暗色生态位；无壁纸，层次全靠分层底色 + 细边框 */
+html[data-theme="black"] {
+  --bg: #000000;                       /* 真 OLED 黑 */
+  --bg-soft: rgba(255, 255, 255, .07);
+  --card-bg: #1C1C1E;                  /* 面板第一层：深灰 */
+  --card-border: rgba(255, 255, 255, .1);
+  --text-main: #F5F5F7;
+  --text-dim: #98989E;                 /* 黑底上保对比，防灰字隐身 */
   --ok-color: #9BD8B4;
-  --bubble-gf: rgba(90, 108, 152, .8);
-  --bubble-gf-border: rgba(190, 202, 232, .2);
-  --input-bg: rgba(38, 51, 77, .72);
-  --shadow-soft: 0 8px 30px rgba(6, 10, 24, .5);
-  --shadow-tiny: 0 2px 10px rgba(6, 10, 24, .45);
-  --wall: url('../assets/chat-yuejian.webp');
-  /* 遮罩上淡下浓：保消息可读性，中段克制以留「双眼」视觉焦点 */
-  --scrim: linear-gradient(rgba(20, 28, 48, .28), rgba(20, 28, 48, .38) 55%, rgba(20, 28, 48, .58));
-  --scroll-thumb: rgba(255, 255, 255, .15);
-  --danger: #D89A9A;
-  --avatar-ring: rgba(255, 255, 255, .25);
+  --bubble-gf: #2A2A2C;                /* 她的气泡：抬升一层的深灰 */
+  --bubble-gf-border: rgba(255, 255, 255, .08);
+  --input-bg: #1C1C1E;
+  --shadow-soft: 0 8px 30px rgba(0, 0, 0, .55);
+  --shadow-tiny: 0 2px 10px rgba(0, 0, 0, .4);
+  --wall: none;
+  --scrim: none;
+  --scroll-thumb: rgba(255, 255, 255, .2);
+  --danger: #E08A8A;
+  --avatar-ring: rgba(255, 255, 255, .22);
+  color-scheme: dark;
 }
 
-/* 月见：遮罩与模态遮罩用深色（暗主题下浅遮罩会显灰） */
-html[data-theme="yuejian"] .overlay { background: rgba(6, 10, 24, .55); }
-html[data-theme="yuejian"] .modal-overlay { background: rgba(6, 10, 24, .6); }
+/* 纯黑：遮罩与模态遮罩用纯黑加深（暗主题下蓝灰遮罩会显灰） */
+html[data-theme="black"] .overlay { background: rgba(0, 0, 0, .5); }
+html[data-theme="black"] .modal-overlay { background: rgba(0, 0, 0, .55); }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -155,6 +144,9 @@ body {
 }
 
 ::selection { background: var(--gf-color-soft); }
+
+/* 键盘导航焦点环（issue #49 P1）：鼠标点击不触发，Tab 导航可见 */
+:focus-visible { outline: 2px solid var(--gf-color); outline-offset: 2px; }
 
 /* ─── 壁纸层 ─── */
 #wall {
@@ -180,9 +172,18 @@ html[data-theme="custom"] #player-input,
 html[data-theme="custom"] #send-btn,
 html[data-theme="custom"] #input-plus-btn,
 html[data-theme="custom"] #input-plus-menu,
+html[data-theme="custom"] #voice-menu,
 html[data-theme="custom"] .input-area {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+}
+
+/* ─── 纯色主题去毛玻璃（issue #49 P0）：白/黑面板全实色，静态 blur 无意义，去掉省 GPU ───
+   浮层（overlay/modal/lightbox/toast）保留 blur：半透明遮罩靠它维持层次 */
+html[data-theme="white"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, #img-preview-bar, .msg.system, .time-divider, .modal, #msg-menu, .profile-panel),
+html[data-theme="black"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, #img-preview-bar, .msg.system, .time-divider, .modal, #msg-menu, .profile-panel) {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* ─── 应用容器 ─── */
@@ -214,6 +215,7 @@ html[data-theme="custom"] .input-area {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-direction: row-reverse;     /* issue #53：头像贴右上角，名字/状态在头像左侧 */
   border: none;
   background: transparent;
   font-family: var(--font-sans);
@@ -224,6 +226,7 @@ html[data-theme="custom"] .input-area {
   transition: background .2s;
 }
 .gf-info:hover { background: var(--bg-soft); }
+.gf-info .gf-meta { text-align: right; }   /* 右侧布局：文字右对齐 */
 .gf-avatar {
   width: 36px;
   height: 36px;
@@ -267,7 +270,7 @@ html[data-theme="custom"] .input-area {
   color: var(--text-dim);           /* 线性图标随主题色 */
   transition: background .18s, color .18s, transform .12s;
 }
-.icon-btn svg { width: 19px; height: 19px; }
+.icon-btn svg { width: var(--icon-md); height: var(--icon-md); }
 .icon-btn:hover { background: var(--gf-color-soft); color: var(--gf-color); }
 .icon-btn:active { transform: scale(.9); }
 
@@ -452,10 +455,10 @@ body.keyboard-open .main-layout {
 #input-plus-btn {
   position: relative;              /* 搜索激活小圆点的定位基准 */
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--input-bg);
   color: var(--text-dim);
   cursor: pointer;
@@ -464,7 +467,7 @@ body.keyboard-open .main-layout {
   align-self: flex-end;
   transition: color .15s, border-color .15s, background .15s;
 }
-#input-plus-btn svg { width: 18px; height: 18px; }
+#input-plus-btn svg { width: var(--icon-md); height: var(--icon-md); }
 #input-plus-btn:hover { color: var(--gf-color); border-color: var(--gf-color); }
 /* 联网搜索激活中：右上角常亮小圆点（菜单关闭后状态仍可见） */
 #input-plus-btn.search-on::after {
@@ -507,6 +510,53 @@ body.keyboard-open .main-layout {
   pointer-events: none;
   overflow: hidden;
 }
+/* 朗读音色选择（issue #73）：与「+」抽屉同形态的整行列表，展开时抽屉收起 */
+#voice-menu {
+  flex: 1 1 100%;
+  order: -1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px;
+  margin-bottom: 10px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(14px);
+  overflow: hidden;
+  max-height: 220px;
+  transition: max-height .2s ease-out, opacity .16s ease-out, padding .2s ease-out, margin .2s ease-out, visibility .2s;
+}
+#voice-menu.hidden {
+  max-height: 0;
+  opacity: 0;
+  padding: 0 8px;
+  margin-bottom: 0;
+  border-width: 0;
+  visibility: hidden;
+  pointer-events: none;
+  overflow: hidden;
+}
+.voice-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+  text-align: left;
+  transition: background .12s;
+}
+.voice-item:hover { background: color-mix(in srgb, var(--gf-color) 8%, transparent); }
+.vi-name { font-size: var(--text-sm); flex: none; }
+.vi-desc { font-size: var(--text-xs); color: var(--text-dim); flex: 1; letter-spacing: var(--ls-wide); }
+.vi-check { width: 15px; height: 15px; flex: none; align-self: center; color: var(--gf-color); opacity: 0; transition: opacity .12s; }
+.voice-item.active .vi-name { color: var(--gf-color); }
+.voice-item.active .vi-check { opacity: 1; }
 /* 条目 = 图标瓦片 + 下方名称（微信功能面板密度） */
 .input-plus-item {
   display: flex;
@@ -552,7 +602,8 @@ body.keyboard-open .main-layout {
   background: var(--scroll-thumb);
   transition: background .15s, box-shadow .15s;
 }
-.plus-search-state {
+.plus-search-state,
+.plus-voice-state {
   font-size: 10px;
   color: var(--text-dim);
   background: var(--input-bg);
@@ -733,11 +784,12 @@ body.keyboard-open .main-layout {
 }
 
 .msg.player .msg-text {
-  background: var(--gf-grad);
-  color: var(--on-gf);
+  background: var(--bubble-player-bg, var(--player-grad, var(--gf-grad)));
+  color: var(--bubble-player-color, var(--on-player, var(--on-gf)));
+  border: 1px solid var(--bubble-player-border, transparent);
   border-radius: var(--radius-bubble);
   border-top-right-radius: 5px;     /* 柔化小尾巴 */
-  box-shadow: 0 3px 14px var(--gf-color-soft);
+  box-shadow: var(--player-shadow, 0 3px 14px var(--gf-color-soft));
   transition: background .3s;
 }
 
@@ -765,7 +817,7 @@ body.keyboard-open .main-layout {
   backdrop-filter: blur(8px);
 }
 
-.msg { animation: msg-appear .28s cubic-bezier(.22, .9, .36, 1); }
+.msg { animation: msg-appear .28s var(--ease-out-soft); }
 @keyframes msg-appear {
   from { opacity: 0; transform: translateY(8px) scale(.98); }
   to { opacity: 1; transform: none; }
@@ -907,7 +959,7 @@ body.waiting #typing-indicator .msg-avatar {
 }
 #scroll-bottom-btn.show { opacity: 1; transform: none; pointer-events: auto; }
 #scroll-bottom-btn:hover { color: var(--gf-color); border-color: var(--gf-color); }
-#scroll-bottom-btn svg { width: 18px; height: 18px; }
+#scroll-bottom-btn svg { width: var(--icon-md); height: var(--icon-md); }
 
 #player-input {
   flex: 1;
@@ -929,6 +981,7 @@ body.waiting #typing-indicator .msg-avatar {
   border-color: var(--gf-color);
   box-shadow: 0 0 0 3px var(--gf-color-soft);   /* 女友色淡光晕 */
 }
+#player-input:focus-visible { outline: none; }   /* 光晕即焦点指示，不叠加 outline */
 #player-input::placeholder { color: var(--text-dim); }
 
 /* 快捷表情按钮（次级按钮，比 send-btn 安静） */
@@ -943,13 +996,13 @@ body.waiting #typing-indicator .msg-avatar {
   padding: 0;
   border: none;
   border-radius: 16px;
-  background: var(--gf-grad);
-  color: var(--on-gf);
+  background: var(--player-grad, var(--gf-grad));
+  color: var(--on-player, var(--on-gf));
   cursor: pointer;
   transition: filter .15s, transform .15s, box-shadow .2s;
-  box-shadow: 0 4px 14px var(--gf-color-soft);
+  box-shadow: var(--player-shadow, 0 4px 14px var(--gf-color-soft));
 }
-#send-btn svg { width: 19px; height: 19px; }
+#send-btn svg { width: var(--icon-md); height: var(--icon-md); }
 #send-btn:hover { filter: brightness(1.04); transform: translateY(-1px); }
 #send-btn:active { transform: scale(.96); }
 #send-btn:disabled { opacity: .55; cursor: not-allowed; }
@@ -1231,7 +1284,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 }
 .save-action-btn:hover { color: var(--gf-color); border-color: var(--gf-color); }
 .save-action-btn:active { transform: scale(.96); }
-.save-action-btn.primary { background: var(--gf-grad); color: var(--on-gf); border: none; font-weight: var(--fw-semibold); }
+.save-action-btn.primary { background: var(--player-grad, var(--gf-grad)); color: var(--on-player, var(--on-gf)); border: none; font-weight: var(--fw-semibold); }
 .save-action-btn.danger { color: var(--danger); }
 .save-action-btn.danger:hover { border-color: var(--danger); background: rgba(201, 138, 138, .1); }
 .migrate-toggle-row { margin-top: 14px; }
@@ -1246,10 +1299,10 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   transition: filter .15s, transform .12s;
 }
 .btn.primary {
-  background: var(--gf-grad);
-  color: var(--on-gf);
+  background: var(--player-grad, var(--gf-grad));
+  color: var(--on-player, var(--on-gf));
   font-weight: var(--fw-semibold);
-  box-shadow: 0 4px 12px var(--gf-color-soft);
+  box-shadow: var(--player-shadow, 0 4px 12px var(--gf-color-soft));
 }
 .btn.secondary { background: var(--bubble-gf); color: var(--text-main); border: 1px solid var(--bubble-gf-border); }
 .btn:hover { filter: brightness(1.05); }
@@ -1288,7 +1341,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   cursor: pointer;
   transition: background .15s, transform .15s;
 }
-.msg-menu-item svg { width: 16px; height: 16px; flex: none; }
+.msg-menu-item svg { width: var(--icon-sm); height: var(--icon-sm); flex: none; }
 .msg-menu-item:hover { background: var(--gf-color-soft); }
 .msg-menu-item:active { transform: scale(.97); }
 .msg-menu-item.danger { color: var(--danger); }
@@ -1319,7 +1372,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 }
 
 /* 壁纸切换淡入（JS 在 toggleTheme 时触发） */
-#wall.theme-fade { animation: wall-fade .5s ease; }
+#wall.theme-fade { animation: wall-fade .5s var(--ease-out-soft); }
 @keyframes wall-fade {
   from { opacity: .5; }
   to { opacity: 1; }
@@ -1338,27 +1391,20 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 /* ─── 个人主页（主页化形态 · issue #27）─── */
 .profile-panel {
   position: fixed;
-  top: 3vh;
-  bottom: 3vh;
-  left: 50%;
-  transform: translateX(-50%);
+  inset: 0;                    /* 全屏（issue #69 后续）：桌面与移动统一 */
   z-index: 95;
-  width: min(560px, calc(100vw - 48px));
   /* 页面形态：面板定高，滚动交给 profile-body，关闭键常驻可见 */
   overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: 28px;
   backdrop-filter: blur(26px);
   -webkit-backdrop-filter: blur(26px);
-  box-shadow: var(--shadow-soft);
-  animation: ph-appear .24s cubic-bezier(.22, .9, .36, 1);
+  animation: ph-appear .24s var(--ease-out-soft);
 }
 @keyframes ph-appear {
-  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
-  to { opacity: 1; transform: translateX(-50%); }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
 }
 .profile-panel::-webkit-scrollbar { width: 0; }
 
@@ -1380,52 +1426,65 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 .profile-close:hover { filter: brightness(.97); }
 .profile-close:active { transform: scale(.92); }
 
+/* 顶部卡片（issue #85）：整体收敛 + 随滚动渐进收起——
+   --pc（0→1，由 .profile-body scroll 驱动）插值全部尺寸；回顶自然展开 */
 .profile-header {
   position: relative;
   flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 46px 24px 20px;
+  padding: calc(30px - 10px * var(--pc, 0)) 20px calc(14px - 6px * var(--pc, 0));
   text-align: center;
   /* 女友色光晕：从头顶洒下 + 底部发丝线与内容区分隔 */
   background: radial-gradient(480px 300px at 50% -30%, var(--gf-color-soft), transparent 72%);
   border-bottom: 1px solid var(--card-border);
 }
 .profile-avatar {
-  width: 108px;
-  height: 108px;
+  width: calc(76px - 24px * var(--pc, 0));
+  height: calc(76px - 24px * var(--pc, 0));
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid var(--gf-color);
-  box-shadow: 0 0 0 7px var(--gf-color-soft), var(--shadow-soft);
-  margin-bottom: 16px;
+  border: 2px solid var(--gf-color);
+  box-shadow: 0 0 0 calc(5px - 2px * var(--pc, 0)) var(--gf-color-soft), var(--shadow-soft);
+  margin-bottom: calc(10px - 5px * var(--pc, 0));
 }
-.profile-name { font-size: var(--text-2xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-widest); }
+.profile-name { font-size: var(--text-xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-widest); }
 .profile-tag {
   font-size: var(--text-sm);
   color: var(--gf-color);
   background: var(--gf-color-soft);
   border-radius: 999px;
-  padding: 4px 14px;
-  margin-top: 8px;
+  padding: 3px 12px;
+  margin-top: 6px;
   letter-spacing: var(--ls-wide);
 }
 .profile-signature {
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   color: var(--text-dim);
-  margin-top: 12px;
+  margin-top: 8px;
   line-height: var(--lh-relaxed);
+  /* 下滑收起：签名整段收拢（issue #85） */
+  max-height: calc(56px * (1 - var(--pc, 0)));
+  opacity: calc(1 - var(--pc, 0));
+  overflow: hidden;
 }
 
 /* ─── 统计条（主页感的关键：回忆 / 喜好 / 相伴天数）─── */
-.profile-stats { display: flex; margin-top: 16px; }
+/* 下滑收起：统计条与签名一齐收拢（issue #87），沿用 --pc 插值，直接赋值不节流 */
+.profile-stats {
+  display: flex;
+  margin-top: calc(10px - 4px * var(--pc, 0));
+  max-height: calc(64px * (1 - var(--pc, 0)));
+  opacity: calc(1 - var(--pc, 0));
+  overflow: hidden;
+}
 .profile-stats:empty { display: none; }
 .profile-stat {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 2px 24px;
+  padding: 2px 18px;
   position: relative;
 }
 .profile-stat + .profile-stat::before {
@@ -1437,7 +1496,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   width: 1px;
   background: var(--card-border);
 }
-.ps-num { font-size: var(--text-xl); font-weight: var(--fw-semibold); color: var(--text-main); }
+.ps-num { font-size: var(--text-lg); font-weight: var(--fw-semibold); color: var(--text-main); }
 .ps-label { font-size: var(--text-xs); color: var(--text-dim); letter-spacing: var(--ls-wider); }
 
 .profile-body {
@@ -1447,8 +1506,10 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   padding: 18px 22px 26px;
   display: flex;
   flex-direction: column;
+  align-items: center;             /* 全屏下内容列居中限宽（issue #69 后续） */
   gap: 24px;
 }
+.profile-body > * { width: min(640px, 100%); }
 .profile-body::-webkit-scrollbar { width: 4px; }
 .profile-body::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }
 /* ─── 主页分区（issue #27 二轮：拆卡片盒 → 个人主页形态）───
@@ -1741,15 +1802,29 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 @keyframes sk-pulse { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
 #dialogue-area.hist-fade { animation: hist-fade .16s ease-out; }
 @keyframes hist-fade { from { opacity: .25; } to { opacity: 1; } }
+
+/* ═══ 切换过渡（issue #53 → #56/#61 两轮简化）：瞬时呈现 + 仅 opacity 快速淡入 ═══
+   两段式编排实测掉帧；translateY 还会在滚动容器上引发整层重排——
+   #61 去掉位移只留 opacity（0.28s），滚动定位由 renderHistory 多重校准负责 */
+#dialogue-area.switch-enter { animation: switch-enter .28s ease-out; }
+@keyframes switch-enter {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.gf-info.switch-enter { animation: gf-enter .28s ease-out; }
+@keyframes gf-enter {
+  from { opacity: 0; transform: scale(.97); }
+  to   { opacity: 1; transform: none; }
+}
 .hist-older-tip { text-align: center; font-size: var(--text-xs); color: var(--text-dim); padding: 6px 0 10px; letter-spacing: var(--ls-wider); opacity: .65; }
 
 /* ─── 语音输入（issue #38 v1：微信式切换键 + 按住说话） ─── */
 #voice-mode-btn {
   flex: none;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   background: var(--input-bg);
   color: var(--text-dim);
   cursor: pointer;
@@ -1758,7 +1833,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   align-self: flex-end;
   transition: color .15s, border-color .15s;
 }
-#voice-mode-btn svg { width: 18px; height: 18px; }
+#voice-mode-btn svg { width: var(--icon-md); height: var(--icon-md); }
 #voice-mode-btn:hover { color: var(--gf-color); border-color: var(--gf-color); }
 #voice-mode-btn.active { color: var(--gf-color); border-color: var(--gf-color); }
 
@@ -1864,3 +1939,86 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   0%, 100% { opacity: .45; }
   50% { opacity: 1; }
 }
+
+/* ─── 角色立绘主页背景（issue #69）─── */
+.profile-panel.has-hero {
+  background-size: cover;
+  background-position: top center;
+}
+/* 立绘上保文字可读：header 雾化层（按主题明暗自适应）；
+   body 不再大面积雾化——立绘全幅可见，分区卡片自行承担可读性（见 gf 主题卡片规则） */
+.profile-panel.has-hero .profile-header {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 66%, transparent), color-mix(in srgb, var(--bg) 84%, transparent));
+}
+/* 角色专属主题：分区卡片化——半透明角色色调 + 自然圆角 + 毛玻璃（立绘透出） */
+html[data-theme="gf"] .profile-section {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 14px 16px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: var(--shadow-tiny);
+}
+html[data-theme="gf"] .profile-body { gap: 16px; }
+
+/* ═══ 输入卡（issue #74 借鉴改造）：大圆角卡片 = 输入区（上）+ 操作行（下） ═══ */
+.input-area { padding: 8px 14px 12px; gap: 8px; }
+.input-card {
+  flex: 1 1 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--input-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 22px;
+  padding: 8px 10px 7px;
+  box-shadow: var(--shadow-tiny);
+  transition: border-color .2s, box-shadow .2s;
+}
+.input-card:focus-within { border-color: var(--gf-color); box-shadow: 0 0 0 3px var(--gf-color-soft); }
+#player-input { border: none; background: transparent; box-shadow: none; padding: 7px 8px 4px; border-radius: 14px; }
+#player-input:focus { border: none; box-shadow: none; }
+#hold-talk-btn { margin: 4px 0; }
+.input-card-bar { display: flex; align-items: center; gap: 6px; margin-top: 5px; }
+.icp-spacer { flex: 1; }
+/* 能力 pill（深度思考 / 智能搜索）：激活态走主题角色色 */
+.ic-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 30px; padding: 0 11px; border-radius: 999px;
+  border: 1px solid transparent; background: var(--bg-soft);
+  color: var(--text-dim); font-size: var(--text-sm); font-family: var(--font-sans);
+  letter-spacing: var(--ls-wide); cursor: pointer; flex: none;
+  transition: color .15s, background .15s, border-color .15s;
+}
+.ic-pill svg { width: 15px; height: 15px; }
+.ic-pill:hover { color: var(--gf-color); }
+.ic-pill.active {
+  color: var(--gf-color);
+  background: color-mix(in srgb, var(--gf-color) 12%, transparent);
+  border-color: color-mix(in srgb, var(--gf-color) 32%, transparent);
+}
+/* 卡内图标键：语音模式 / 加号 / 清空 */
+#voice-mode-btn, #input-plus-btn, #clear-input-btn {
+  flex: none; width: 34px; height: 34px; border: none; border-radius: 50%;
+  background: transparent; color: var(--text-dim); cursor: pointer;
+  display: grid; place-items: center; align-self: center;
+  transition: color .15s, background .15s;
+}
+#voice-mode-btn svg, #input-plus-btn svg, #clear-input-btn svg { width: 18px; height: 18px; }
+#voice-mode-btn:hover, #input-plus-btn:hover { color: var(--gf-color); background: var(--bg-soft); }
+#clear-input-btn:hover { color: var(--danger); background: var(--bg-soft); }
+#input-plus-btn.search-on::after { top: 2px; right: 2px; width: 8px; height: 8px; }
+#send-btn { width: 36px; height: 36px; border-radius: 50%; margin-left: 2px; }
+#send-btn svg { width: 16px; height: 16px; }
+/* 相册勾选行：缩略图 + 右上角勾选圈（点圈取消选择） */
+#img-preview-bar { padding: 0; background: transparent; border: none; backdrop-filter: none; margin: 0 16px 6px; }
+.ipb-thumb { position: relative; width: 64px; height: 64px; }
+#img-preview-thumb { width: 64px; height: 64px; object-fit: cover; border-radius: 14px; box-shadow: var(--shadow-tiny); }
+.ipb-check {
+  position: absolute; top: -5px; right: -5px; width: 22px; height: 22px;
+  border-radius: 50%; border: 2px solid #fff; background: var(--gf-color); color: #fff;
+  display: grid; place-items: center; cursor: pointer; padding: 0;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, .18);
+}
+.ipb-check svg { width: 11px; height: 11px; }
+.input-card-bar { flex-wrap: nowrap; }   /* 操作行永不换行：宁缩 pill 不漂移（issue #74 移动端实测） */

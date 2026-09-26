@@ -6,26 +6,19 @@
   <title>月见 Moonveil</title>
 <link rel="icon" type="image/png" href="assets/icons/favicon.png">
 <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
-<link rel="stylesheet" href="css/tokens.css?v=0.2.8">
-<link rel="stylesheet" href="css/style.css?v=0.2.8">
-  <link rel="stylesheet" href="css/mobile.css?v=0.2.8">
+<link rel="stylesheet" href="css/tokens.css?v=0.3.5">
+<link rel="stylesheet" href="css/style.css?v=0.3.5">
+  <link rel="stylesheet" href="css/mobile.css?v=0.3.5">
 </head>
 <body>
 
-<!-- 壁纸层（随主题切换 light/harbor） -->
+<!-- 壁纸层（仅自定义主题应用用户壁纸；白/黑为纯色底） -->
 <div id="wall"></div>
 
 <div class="app" id="app">
 
-  <!-- ════ 顶栏 ════ -->
+  <!-- ════ 顶栏（issue #53：功能键左上 · 她在右上）════ -->
   <header id="top-bar">
-    <button class="gf-info" id="gf-info" title="查看她的主页">
-      <img class="gf-avatar" id="top-avatar" src="assets/avatar.png" alt="">
-      <div class="gf-meta">
-        <div class="gf-name" id="top-name">苏晚晚</div>
-        <div class="gf-status" id="top-status"><span class="status-dot"></span><span id="top-status-text">在线</span></div>
-      </div>
-    </button>
     <div class="top-actions">
       <button class="icon-btn" id="sidebar-toggle" title="功能栏" aria-label="功能栏">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg>
@@ -34,12 +27,19 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
       </button>
     </div>
+    <button class="gf-info" id="gf-info" title="查看她的主页">
+      <img class="gf-avatar" id="top-avatar" src="assets/avatar.png" alt="">
+      <div class="gf-meta">
+        <div class="gf-name" id="top-name">苏晚晚</div>
+        <div class="gf-status" id="top-status"><span class="status-dot"></span><span id="top-status-text">在线</span></div>
+      </div>
+    </button>
   </header>
 
   <div id="sidebar-overlay" class="overlay hidden"></div>
   <div class="main-layout" id="main-layout">
 
-    <!-- ════ 侧栏：三位女友列表（桌面端） ════ -->
+    <!-- ════ 侧栏：两位女友列表（桌面端） ════ -->
     <aside id="sidebar">
       <div class="sidebar-brand">
         <div class="brand-logo">🌙</div>
@@ -82,33 +82,62 @@
           <button class="quote-close" id="quote-close" aria-label="取消引用">×</button>
         </div>
         <!-- 图片预览条（issue #8：发送前缩略图确认，可移除重选；第一期每条消息限 1 张） -->
+        <!-- 相册勾选行（issue #74）：缩略图 + 右上角勾选圈（点圈取消选择） -->
         <div id="img-preview-bar" class="hidden">
-          <img id="img-preview-thumb" alt="待发送图片">
-          <button id="img-preview-remove" title="移除图片" aria-label="移除图片">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-          </button>
+          <div class="ipb-thumb">
+            <img id="img-preview-thumb" alt="待发送图片">
+            <button id="img-preview-remove" class="ipb-check" title="取消选择" aria-label="取消选择图片">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5 5L20 7"/></svg>
+            </button>
+          </div>
         </div>
         <div class="input-area">
           <button id="scroll-bottom-btn" title="回到最新" aria-label="回到最新消息">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
           </button>
-          <!-- 语音/键盘切换（issue #38 v1：微信式左置切换键） -->
-          <button id="voice-mode-btn" title="语音输入" aria-label="切换语音输入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
-          <textarea id="player-input" rows="1" placeholder="写点什么吧…"></textarea>
-          <!-- 语音模式：按住说话（松手 ASR 转文字发送；滑出取消） -->
-          <button id="hold-talk-btn" class="hidden"><span class="ht-label">按住 说话</span></button>
-          <!-- 「+」聚合键（issue #23）：发图片 / 联网搜索，置于发送键左侧 -->
-          <button id="input-plus-btn" title="更多（发图片 / 联网搜索）" aria-label="更多功能" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
-          <button id="send-btn" title="发送" aria-label="发送"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3 3l18 9-18 9 4-9z"/></svg></button>
+          <!-- 输入卡（issue #74）：大圆角卡片 = 输入区（上）+ 操作行（下：左语音/能力 pill/+，右清除/发送） -->
+          <div class="input-card" id="input-card">
+            <textarea id="player-input" rows="1" placeholder="写点什么吧…"></textarea>
+            <!-- 语音模式：按住说话（松手 ASR 转文字发送；滑出取消） -->
+            <button id="hold-talk-btn" class="hidden"><span class="ht-label">按住 说话</span></button>
+            <div class="input-card-bar">
+              <button id="voice-mode-btn" title="语音输入" aria-label="切换语音输入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4"/></svg></button>
+              <button id="think-pill" class="ic-pill" title="深度思考（关闭后响应更快）" aria-pressed="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15.5l.7 1.8 1.8.7-1.8.7-.7 1.8-.7-1.8-1.8-.7 1.8-.7z"/></svg>深度思考</button>
+              <button id="search-pill" class="ic-pill" title="智能搜索（先检索再回答）" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.7 2.6 4 5.7 4 9s-1.3 6.4-4 9c-2.7-2.6-4-5.7-4-9s1.3-6.4 4-9z"/></svg>智能搜索</button>
+              <button id="input-plus-btn" title="更多（拍照 / 相册 / 音色）" aria-label="更多功能" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button>
+              <span class="icp-spacer"></span>
+              <button id="clear-input-btn" title="清空输入" aria-label="清空输入"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+              <button id="send-btn" title="发送" aria-label="发送"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M3 3l18 9-18 9 4-9z"/></svg></button>
+            </div>
+          </div>
           <input type="file" id="img-file-input" accept="image/*" style="display:none">
           <div id="input-plus-menu" class="hidden">
-            <button class="input-plus-item" id="plus-img">
-              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.4-4.4a2 2 0 0 0-2.8 0L5 19.4"/></svg></span>
-              <span class="ipt-name">发图片</span>
+            <button class="input-plus-item" id="plus-photo">
+              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-2h6l2 2h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+              <span class="ipt-name">拍照</span>
             </button>
-            <button class="input-plus-item" id="plus-search">
-              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.7 2.6 4 5.7 4 9s-1.3 6.4-4 9c-2.7-2.6-4-5.7-4-9s1.3-6.4 4-9z"/></svg><span class="ipt-dot"></span></span>
-              <span class="ipt-name">联网搜索<span class="plus-search-state">关</span></span>
+            <button class="input-plus-item" id="plus-album">
+              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="9" cy="9" r="2"/><path d="m21 15-4.4-4.4a2 2 0 0 0-2.8 0L5 19.4"/></svg></span>
+              <span class="ipt-name">相册</span>
+            </button>
+            <button class="input-plus-item" id="plus-voice">
+              <span class="ipt-tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="9" y="2.5" width="6" height="11.5" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18.5v3"/></svg></span>
+              <span class="ipt-name">音色<span class="plus-voice-state">经典</span></span>
+            </button>
+          </div>
+          <!-- 朗读音色选择（issue #73）：与「+」抽屉同形态的整行列表，二选一展开 -->
+          <div id="voice-menu" class="hidden" aria-label="朗读音色选择">
+            <button class="voice-item" type="button" data-voice="jingdiannvsheng">
+              <span class="vi-name">经典女声</span><span class="vi-desc">温柔真诚 · 默认</span>
+              <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
+            </button>
+            <button class="voice-item" type="button" data-voice="tianmeinvsheng">
+              <span class="vi-name">甜美女声</span><span class="vi-desc">软糯甜美</span>
+              <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
+            </button>
+            <button class="voice-item" type="button" data-voice="ruanmengnvsheng">
+              <span class="vi-name">软萌女声</span><span class="vi-desc">轻柔娇软</span>
+              <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
             </button>
           </div>
         </div>
@@ -117,7 +146,7 @@
 
   </div>
 
-  <!-- ════ 移动端底部导航：三位女友 tab ════ -->
+  <!-- ════ 移动端底部导航：两位女友 tab ════ -->
 
 </div>
 
@@ -143,12 +172,10 @@
     <!-- type=text + text-security：Android 不触发安全键盘（方便粘贴 API Key），仍以圆点遮挡 -->
     <label class="modal-field-label" for="api-key-input">DeepSeek API Key</label>
     <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
-    <label class="modal-field-label" for="tavily-key-input">网络搜索 Tavily Key（可选）</label>
-    <input type="text" id="tavily-key-input" placeholder="tvly-...，填写后聊天输入区可开启联网搜索" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
-    <label class="modal-field-label" for="step-key-input">朗读 · 阶跃 StepFun Key（可选，优先于千问朗读）</label>
-    <input type="text" id="step-key-input" placeholder="在 platform.stepfun.com 获取；经典女声朗读" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
-    <label class="modal-field-label" for="dashscope-key-input">语音 · 千问 DashScope Key（可选）</label>
-    <input type="text" id="dashscope-key-input" placeholder="sk-...（百炼控制台获取），填写后可发语音、她可朗读" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <label class="modal-field-label" for="step-key-input">朗读 · 阶跃 StepFun Key（可选）</label>
+    <input type="text" id="step-key-input" placeholder="在 platform.stepfun.com 获取，用于她的朗读；音色在输入框「+」里换" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    <label class="modal-field-label" for="dashscope-key-input">语音转文字 · DashScope Key（可选）</label>
+    <input type="text" id="dashscope-key-input" placeholder="sk-...（百炼控制台获取），填写后可用语音发消息（转文字）" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
     <div class="modal-buttons">
       <button class="btn secondary" id="api-skip-btn">跳过</button>
       <button class="btn primary" id="api-save-btn">保存</button>
@@ -167,7 +194,7 @@
   <div class="avatar-picker" id="avatar-picker"><!-- 由 js 渲染：emoji 头像 + 上传自定义图片 --></div>
   <input type="file" id="create-avatar-input" accept="image/*" style="display:none">
   <label class="modal-field-label" for="create-desc">描述 TA <em class="req">*</em></label>
-  <textarea id="create-desc" placeholder="TA 是什么身份、什么性格、说话什么风格？&#10;如：温柔冷静的图书管理员，说话轻声细语，喜欢旧书和下雨天"></textarea>
+  <textarea id="create-desc" placeholder="TA 是什么身份、什么性格、说话什么风格？&#10;如：温柔冷静的图书管理员，说话轻声细语，喜欢旧书和下雨天&#10;写上 MBTI（如 ENFP）会让性格更贴合你的预期"></textarea>
   <div class="create-presets">
     <div class="preset-chips">
       <button class="preset-chip" data-preset="冷静理性的医生，温和有距离感，偶尔冷幽默">冷静医生</button>
@@ -301,8 +328,8 @@ TA：「（再来一句）」
 <!-- ════ 轻提示 ════ -->
 <div id="toast" class="hidden"></div>
 
-<script src="js/version.js?v=0.2.8"></script>
-<script src="js/data.js?v=0.2.8"></script>
-<script src="js/app.js?v=0.2.8"></script>
+<script src="js/version.js?v=0.3.5"></script>
+<script src="js/data.js?v=0.3.5"></script>
+<script src="js/app.js?v=0.3.5"></script>
 </body>
 </html>

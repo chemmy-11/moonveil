@@ -3,7 +3,7 @@
    ─────────
    使用规则：
    1. 所有视觉决策（字号、字重、间距、圆角、阴影、过渡）从 token 取，不写魔法值
-   2. 主题（珍珠/海港/星河/山月）只覆盖 token，不改组件样式
+   2. 主题（纯白/纯黑/自定义）只覆盖 token，不改组件样式（issue #48）
    3. 媒体查询（mobile/tablet）只调 token 映射，不改组件结构
    ═══════════════════════════════════════════════════════════ */
 
@@ -50,6 +50,14 @@
   --ls-wider:   1px;      /* 菜单项/按钮 */
   --ls-widest:  2px;      /* 品牌名/大标题 */
   --ls-mega:    3px;      /* 段标签(SECTION TITLE) */
+
+  /* ═══ 动效曲线（品牌曲线，全站统一 · issue #49 P2）═══ */
+  --ease-out-soft: cubic-bezier(.22, .9, .36, 1);
+
+  /* ═══ 图标刻度（两档 · issue #49 P1）═══ */
+  --icon-sm: 16px;    /* 菜单项/行内操作 */
+  --icon-md: 20px;    /* 按钮主图标 */
+
 }
 
 /* ═══ 语义色（默认浅色主题值）═══
@@ -60,8 +68,30 @@
   --warning: #C9985E;        /* 莫兰迪杏黄（警告提示） */
 }
 
-/* 暗色主题（星河/山月）：语义色提亮，深底上更通透 */
-html[data-theme="yuejian"],
+/* ═══ 玩家侧按钮体系（issue #51）：纯白/纯黑主题下玩家气泡与发送键
+   弃用女友粉系渐变，改无彩灰阶——无彩主题里彩色主按钮过于跳跃（owner 反馈）。
+   ⚠ 默认值不能用 :root 层 var() 引用（会在 html 层固化，拿不到 body[data-gf]
+   派生——同 #11 求值时机坑），消费处用 var(--player-grad, var(--gf-grad))
+   fallback 形式，在使用元素上解析；未覆写主题（custom/默认）自然继承女友色。
+   女友色 accent（chips/选中态/她的气泡边等）不受影响 */
+html[data-theme="white"] {
+  --player-grad: linear-gradient(135deg, #666A74, #52555E);   /* 中灰 · 冷调（发送键/主按钮） */
+  --on-player: #FFFFFF;
+  --player-shadow: 0 3px 12px rgba(44, 48, 56, .18);
+  /* 用户气泡改纯白（issue #77 终版：owner 澄清要改的是用户气泡，非女友气泡）——
+     独立 token 只作用气泡，发送键/主按钮保持灰阶中性化（#51）不受波及 */
+  --bubble-player-bg: #FFFFFF;
+  --bubble-player-color: #1D1D1F;
+  --bubble-player-border: rgba(0, 0, 0, .06);
+}
+html[data-theme="black"] {
+  --player-grad: linear-gradient(135deg, #46494F, #36393F);   /* 深灰 · 抬升于真黑底 */
+  --on-player: #F5F5F7;
+  --player-shadow: 0 3px 12px rgba(0, 0, 0, .45);
+}
+
+/* 暗色主题（纯黑/自定义）：语义色提亮，深底上更通透 */
+html[data-theme="black"],
 html[data-theme="custom"] {
   --info:    #8FB0DC;
   --warning: #E6BC85;
@@ -100,12 +130,8 @@ html[data-font="kai"] {
       color-mix(in srgb, var(--gf-color-base, #D993B4) 74%, white),
       var(--gf-color-base, #D993B4));
   }
-  /* 海港（暖米白浅色）：与珍珠潮汐同系，soft 稍实突出选中态 */
-  html[data-theme="harbor"] body[data-gf] {
-    --gf-color-soft: color-mix(in srgb, var(--gf-color-base, #D993B4) 22%, transparent);
-  }
-  /* 暗主题（星河/山月）：统一降饱和提亮适配深底 */
-  html[data-theme="yuejian"] body[data-gf] {
+  /* 纯黑（OLED 暗色）：统一降饱和提亮适配深底 */
+  html[data-theme="black"] body[data-gf] {
     --gf-color: color-mix(in srgb, var(--gf-color-base, #D993B4) 60%, #DDE0EC);
     --gf-color-soft: color-mix(in srgb, var(--gf-color-base, #D993B4) 24%, transparent);
     --gf-grad: linear-gradient(135deg,
@@ -152,3 +178,46 @@ html[data-theme="custom"] {
 }
 html[data-theme="custom"] .overlay { background: rgba(4, 6, 12, .5); }
 html[data-theme="custom"] .modal-overlay { background: rgba(4, 6, 12, .55); }
+
+/* ═══ 角色专属主题（issue #69 改造）═══
+   与纯白/纯黑/自定义同级；选中后随当前角色切换整套视觉：
+   壁纸/立绘由 JS 按 VISUAL_PACKS 应用，本块负责 UI token（气泡、卡片、输入区）。
+   有包角色：各自主题色系全面适配（已含气泡回女友色渐变——不定义 --player-grad 即回退
+   var(--gf-grad)）；无包角色（自建）：中性磨砂变体，不套任何角色色 */
+html[data-theme="gf"] {
+  --wall: none;   /* 无包角色场景：无壁纸；有包角色由 JS 内联覆盖 */
+}
+html[data-theme="gf"] body[data-gf] {
+  /* 无包角色兜底：中性（与 custom 主题的磨砂思路一致，基底偏暖白） */
+  --player-grad: linear-gradient(135deg, #8E8A96, #74707C);
+  --on-player: #FFFFFF;
+  --player-shadow: 0 3px 12px rgba(90, 88, 100, .2);
+  --bubble-gf: rgba(255, 255, 255, .78);
+  --bubble-gf-border: rgba(146, 156, 180, .16);
+}
+/* ─── 苏晚晚：暖粉系 ─── */
+html[data-theme="gf"] body[data-gf="wanwan"] {
+  --player-grad: linear-gradient(135deg, #EDC2D8, #D993B4);
+  --on-player: #4A3440;
+  --player-shadow: 0 3px 14px rgba(217, 147, 180, .35);
+  --bubble-gf: rgba(255, 252, 253, .86);
+  --bubble-gf-border: rgba(217, 147, 180, .3);
+  --card-bg: rgba(255, 252, 253, .66);
+  --card-border: rgba(255, 255, 255, .8);
+  --bg-soft: rgba(255, 250, 252, .6);
+  --input-bg: rgba(255, 251, 252, .78);
+  --danger: #C9869A;
+}
+/* ─── 唐苓：暖橙系 ─── */
+html[data-theme="gf"] body[data-gf="tangtang"] {
+  --player-grad: linear-gradient(135deg, #F0C68E, #E0B06C);
+  --on-player: #4E4022;
+  --player-shadow: 0 3px 14px rgba(224, 176, 108, .36);
+  --bubble-gf: rgba(255, 252, 246, .88);
+  --bubble-gf-border: rgba(224, 176, 108, .32);
+  --card-bg: rgba(255, 252, 246, .68);
+  --card-border: rgba(255, 255, 255, .82);
+  --bg-soft: rgba(255, 250, 240, .6);
+  --input-bg: rgba(255, 251, 246, .78);
+  --danger: #C9947A;
+}

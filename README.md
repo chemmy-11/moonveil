@@ -11,10 +11,10 @@
 
 ## 👩 两位测试角色
 
-| 角色 | 类型 | 主题色 | 简介 |
+| 角色 | 类型 | 主题色 | MBTI | 简介 |
 |------|------|--------|------|
-| **苏晚晚** | 温柔治愈 | 粉 `#D993B4` | 花店店主，轻声细语，记得你说过的每一件小事 |
-| **唐糖** | 元气活泼 | 杏橙 `#E0B06C` | 烘焙学徒，话痨 + emoji 轰炸，直球表达喜欢 |
+| **苏晚晚** | 温柔治愈 | 粉 `#D993B4` | ISFP | 花店店主，轻声细语，记得你说过的每一件小事 |
+| **唐苓** | 元气活泼 | 杏橙 `#E0B06C` | ESFJ | 烘焙学徒，话痨 + emoji 轰炸，直球表达喜欢 |
 
 人设与开场白在 `js/data.js`，记忆与人格源文件在 `personas/`。
 
@@ -22,11 +22,16 @@
 
 - **两个独立会话** — 每位角色独立的聊天历史（localStorage 持久化，重开不丢）
 - **AI 实时对话** — DeepSeek API 直连，每人独立 System Prompt（人设 + 记忆 + 说话风格）
-- **微信式气泡 UI** — 雾面毛玻璃 + 壁纸背景，三主题（珍珠潮汐 / 海港 / 星河）
+- **微信式气泡 UI** — 纯色分层设计，四主题（纯白 / 纯黑 OLED / 自定义壁纸导入 / **角色专属**：随当前角色切换立绘主页·聊天背景·气泡配色，issue #69）（issue #48）
 - **消息节奏控制** — 流式输出 + 智能拆条 + 气泡延迟队列（微信连发感），可打断
 - **记忆自动沉淀** — 「她的喜好」随对话自然提取；「我们的回忆」低频严格盘点，只记重要时刻
+- **图片消息 + 联网搜索** — 上传图片多模态识图（压缩配额 + lightbox 大图）；「智能搜索」开关开启先检索再回答——Bing RSS 免费渠道（国内直连免 key，CapacitorHttp 原生请求，cn→www 双端点回落 + 摘要去噪，issue #64/#67/#88）
+- **语音消息 + 女友朗读** — 桌面端微信式按住说话（松手自动转文字发送）；她的每条回复都可朗读（StepAudio 2.5，经典/甜美/软萌三档音色 + LLM 情绪演绎指令）
+- **用户自建角色** — 创建向导 + emoji/上传头像 + Markdown 素材章节拼接
+- **检查更新（OTA）** — 应用内下载 APK 自动拉起安装器，GitHub API + raw 双源检查防误判
+- **存档管理** — HELIOS 式快照槽位，支持导出 .md / JSON 备份与跨设备迁移
 - **打字指示器 + 发送音效** — 真实聊天感
-- **移动端适配** — 底部导航两 tab 切换角色，键盘顶起完美适配（原生 insets）
+- **移动端适配** — 侧栏抽屉切换角色 + 女友全屏个人主页，键盘顶起适配（原生 insets）
 - **双端运行** — 浏览器直接玩 / Android APK
 
 ## 🚀 快速开始
@@ -34,18 +39,18 @@
 ### Web 端
 
 ```bash
-cd AI-GF
-python -m http.server 8080    # 或任意静态服务器
+npm install
+npm run dev               # 纯静态开发服务器（默认 8080）
 ```
 
-浏览器打开 `http://localhost:8080`，首次启动输入 DeepSeek API Key 即可开始。
+浏览器打开 `http://localhost:8080`，首次启动输入 DeepSeek API Key 即可开始。任意静态服务器（如 `python -m http.server 8080`）也可运行。
 
 > ⚠️ 直接双击 `index.html` 可能因浏览器 CORS 限制无法调用 API，推荐本地服务器方式。
 
 ### Android APK
 
 ```bash
-bash scripts/build.sh    # 一键构建（同步 www → cap copy → gradle → md5 验证）
+bash scripts/build.sh    # 一键构建（同步 www → cap sync → gradle → md5 验证）
 ```
 
 产物：`AI-GF.apk`
@@ -56,26 +61,29 @@ bash scripts/build.sh    # 一键构建（同步 www → cap copy → gradle →
 AI-GF/
 ├── index.html              # 主入口 — 聊天 UI
 ├── css/
-│   ├── style.css           # 桌面端：毛玻璃三主题 + 两角色主题色
-│   └── mobile.css          # 移动端：底部导航 + 键盘 insets 适配
+│   ├── style.css           # 桌面端：纯色分层四主题（白/黑/自定义/角色专属）+ 角色主题色
+│   ├── tokens.css          # 设计 token 单一来源（字号 / 字重 / 字距 / 语义色）
+│   └── mobile.css          # 移动端：键盘 insets 适配 + 底部 ActionSheet
 ├── js/
-│   ├── data.js             # 两角色 System Prompt + LLM 配置（与 personas/ 同步）
+│   ├── data.js             # 三角色 System Prompt + LLM 配置（与 personas/ 同步）
 │   ├── app.js              # 聊天引擎：对话/持久化/记忆提取/主题/音效/更新
 │   └── version.js          # 版本号
-├── personas/               # 两角色的记忆与人格源文件（共同记忆 + 分层人格）
+├── personas/               # 三角色的记忆与人格源文件（共同记忆 + 分层人格）
 │   ├── su-wanwan.md        #   苏晚晚（温柔治愈）
-│   └── tang-tangtang.md    #   唐糖（元气活泼）
-├── assets/                 # 素材（壁纸/头像/音效/图标）
+│   └── tang-tangtang.md    #   唐苓（元气活泼）
+├── assets/                 # 素材（壁纸/头像/音效/图标/字体）
 ├── android/                # Capacitor Android 工程（含键盘 insets 原生注入）
 ├── scripts/
 │   ├── build.sh            # 一键构建 APK（含 md5 校验 + 版本一致性校验）
-│   └── generate-starry.py  # 「星河」主题星空壁纸生成器（固定种子可复现）
+│   ├── bump-version.sh     # 发版 bump：三处版本同步一条命令
+│   ├── dev-server.js       # 纯静态开发服务器
+│   └── subset-fonts.py     # 字体子集生成（GB2312 全集：一级 + 二级，气泡手写体无缺字）
 └── capacitor.config.json
 ```
 
 ## 🧠 人设体系（角色扮演的核心资产）
 
-每位角色的记忆与人格源文件在 `personas/` 目录（两份 md）：
+每位角色的记忆与人格源文件在 `personas/` 目录（三份 md）：
 
 - **PART A 共同记忆**：关系概览、重要时刻、日常与仪式、偏好、情感模式、亲密与陪伴、记忆使用说明
 - **PART B 人物性格**：Layer 0 核心性格（最高优先级）→ Layer 5 边界雷区，逐层定义；Layer 0 永远优先，任何情况下不得违背
@@ -92,7 +100,7 @@ AI-GF/
 3. **驱动 prompt 迭代** — 反复出现的同类问题，升级为 Layer 规则（如「严禁 AI 腔」已写入 Layer 2）；单点问题留在 Correction 层
 4. **回归验证** — 用同类话题重测，确认修复生效后保留记录作为回归基线
 
-已知的经验性规则（沉淀在 prompt 中）：严禁 AI 腔与总结句式、消息必须推进不复述、短句节奏、思考模型辅助调用需走流式（非流式 content 可能为空）等。公开版人设内置「绝不输出露骨成人内容」硬约束，亲密表达止步于陪伴与日常。
+已知的经验性规则（沉淀在 prompt 中）：严禁 AI 腔与总结句式、消息必须推进不复述、短句节奏、思考模型辅助调用需走流式（非流式 content 可能为空）等。公开版人设内置「绝不输出任何成人/性相关内容」硬约束，亲密表达止步于陪伴与日常。公开版内容边界与同步规范见 `docs/publication-policy.md`。
 
 ## 🛠 自定义
 
@@ -112,7 +120,7 @@ AI-GF/
 ```
 
 - **前端**：原生 HTML/CSS/JS，零依赖、零构建（本地服务器即可运行）
-- **AI 引擎**：DeepSeek Chat API，OpenAI 兼容协议，SSE 流式
+- **AI 引擎**：DeepSeek API（deepseek-flash，支持图片输入），OpenAI 兼容协议，SSE 流式
 - **记忆提取**：辅助调用与主回复同走 SSE 流式（思考模型的非流式响应 content 可能为空）
 - **Android**：Capacitor 打包，原生 insets 键盘适配（物理像素 ÷ density 注入 CSS 变量）
 - **架构参考**：[HELIOS](https://github.com/chemmy-11/helios)（AI 叙事推理游戏）的对话引擎与移动端适配方案

@@ -1,8 +1,8 @@
 # 主题设计规格 · 山月（Shan Yue）
 
-> 状态：设计稿（未落地） · 目标版本 v1.5.9
+> 状态：已归档 —— v1.5.9 已落地，v0.1.3 随 issue #12 下线（星河/山月让位「月见」暗色主题）；v0.2.10 随 issue #48「月见」亦下线，主题收敛为纯白/纯黑/自定义三选；本文仅作历史设计参考
 > 定位：第四个主题，夜晚暗色系，画风极简、低对比，适合做聊天背景
-> 关联：`css/style.css`、`js/app.js`（`THEMES`/`THEME_ORDER`）、`scripts/generate-starry.py`（参考范式）
+> 关联：`css/style.css`、`js/app.js`（`THEMES`/`THEME_ORDER`）、`scripts/generate-starry.py`（参考范式，已随星河主题移除）
 
 ---
 

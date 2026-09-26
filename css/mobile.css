@@ -38,7 +38,7 @@
     border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
     z-index: 90;
     transform: translateX(-110%);
-    transition: transform .25s cubic-bezier(.22, .9, .36, 1);
+    transition: transform .25s var(--ease-out-soft);
     box-shadow: 0 8px 40px rgba(4, 8, 24, .4);
   }
   #sidebar.open { transform: translateX(0); }
@@ -62,7 +62,7 @@
   }
   .sidebar-action .mi-icon { color: var(--text-dim); }
   .sidebar-action:hover, .sidebar-action:active { background: var(--gf-color-soft); }
-  .sidebar-action .mi-icon svg { width: 16px; height: 16px; }
+  .sidebar-action .mi-icon svg { width: var(--icon-sm); height: var(--icon-sm); }
   .sidebar-action.danger { color: var(--danger); }
   .sidebar-action.danger .mi-icon { color: var(--danger); }
 
@@ -84,15 +84,23 @@
   .input-area {
     padding: 8px 12px calc(10px + env(safe-area-inset-bottom, 0px));
   }
-  #player-input { font-size: var(--text-md); padding: 10px 14px; border-radius: 16px; }
-  #send-btn { width: 40px; height: 40px; border-radius: 14px; }
+  /* 输入卡（issue #74）：移动端触控目标保持 ≥40px */
+  /* 输入卡（issue #74）：移动端触控目标保持 ≥40px；操作行在 375 视口不溢出（实测 341>332 的教训） */
+  .input-card { border-radius: 20px; padding: 7px; }
+  .input-card-bar { gap: 4px; }
+  #player-input { font-size: var(--text-md); padding: 6px 8px 4px; border-radius: 12px; }
+  .ic-pill { height: 30px; padding: 0 8px; gap: 4px; }   /* 文字 pill 收紧：94→86px */
+  #voice-mode-btn, #input-plus-btn, #clear-input-btn { width: 36px; height: 36px; }
+  #voice-mode-btn svg, #input-plus-btn svg, #clear-input-btn svg { width: 17px; height: 17px; }
+  #send-btn { width: 40px; height: 40px; border-radius: 50%; }
   #send-btn svg { width: 17px; height: 17px; }
-  #input-plus-btn { width: 40px; height: 40px; border-radius: 14px; }
 
-  /* ─── 聊天图片（issue #8）+「+」聚合抽屉（issue #23/#30）：移动端 ─── */
-  #input-plus-menu { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; }
+  /* ─── 聊天图片（issue #8）+「+」聚合抽屉（issue #23/#30/#73）：移动端 ───
+     3 列（issue #74）：瓦片现有 3 项（拍照/相册/音色） */
+  #input-plus-menu { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; }
   .input-plus-item { padding: 10px 2px 8px; }   /* 触控目标：瓦片 48px + 名称 */
   #img-preview-bar { margin: 0 12px 6px; }
+  .ipb-thumb, #img-preview-thumb { width: 58px; height: 58px; }
   .msg-img { max-width: min(220px, 100%); max-height: 300px; }
   .lightbox-overlay img { max-width: 96vw; max-height: 88vh; }
 
@@ -113,33 +121,24 @@
     font-size: var(--text-md);
   }
 
-  /* ─── 个人主页：移动端真全屏（主页形态 · issue #27）─── */
-  .profile-panel {
-    top: var(--status-bar-h, 0px);
-    left: 0;
-    right: 0;
-    bottom: 0;
-    transform: none;
-    width: auto;
-    border-radius: 0;
-    border: none;
-    animation: ph-appear-m .24s cubic-bezier(.22, .9, .36, 1);
-  }
-  @keyframes ph-appear-m {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: none; }
-  }
-  /* 全屏后关闭键避开状态栏 */
+  /* ─── 个人主页：移动端（全屏基座统一在 style.css，这里只做状态栏与安全区）─── */
+  .profile-panel { top: var(--status-bar-h, 0px); }   /* 全屏落在状态栏之下 */
+  /* 关闭键避开状态栏 */
   .profile-close { top: calc(var(--status-bar-h, 0px) + 12px); }
   .profile-body { padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }
 
   /* ─── 顶栏状态：消息发送中显示打字动画占位 ─── */
   #top-status-text { max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* ─── 语音输入（issue #38）：移动端触控目标加大 ─── */
-  #voice-mode-btn { width: 40px; height: 40px; border-radius: 14px; }
-  #hold-talk-btn { min-height: 40px; }
+  /* ─── 语音（issue #38 / owner 决策）：移动端移除语音输入入口 ——
+     输入法自带语音转文字更方便；朗读（TTS）保留，触控目标加大 ─── */
+  #voice-mode-btn { display: none; }
+  #hold-talk-btn { display: none !important; }
   .msg-tts-btn { width: 26px; height: 26px; }
   .msg-tts-btn svg { width: 16px; height: 16px; }
 
+}
+/* 窄屏保险（≤380px）：pill 再收一档，保证操作行在最小主流视口也不溢出 */
+@media (max-width: 380px) {
+  .ic-pill { padding: 0 6px; font-size: var(--text-xs); }
 }

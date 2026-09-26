@@ -7,7 +7,7 @@
 
 ## 一、项目是什么
 
-**月见（Moonveil）** 是一个 DeepSeek 角色扮演与情感陪伴实验场：两位性格各异的 AI 角色（苏晚晚 / 唐糖），微信式聊天 UI，带人格系统、记忆体系、消息节奏控制。纯前端（原生 HTML/CSS/JS，无框架）+ Capacitor 打包 Android APK。
+**月见（Moonveil）** 是一个 DeepSeek 角色扮演与情感陪伴实验场：两位性格各异的 AI 角色（苏晚晚 / 唐苓），微信式聊天 UI，带人格系统、记忆体系、消息节奏控制。纯前端（原生 HTML/CSS/JS，无框架）+ Capacitor 打包 Android APK。
 
 **三条设计原则**（做任何功能前先读一遍）：
 
@@ -19,7 +19,7 @@
 
 ### 当前进度速览
 
-- **已走完的主线**：基础聊天应用 → 流式/拆条/延迟队列 → 记忆自动提取（回忆卡/喜好卡）→ 长效记忆后端集成（后移除）→ UI 精致化 + 设计系统（`css/tokens.css` token 单一来源）→ 用户自建角色 → 移动端深度适配 → CI 自动化（语法/数据完整性/版本同步/APK 构建）
+- **已走完的主线**：基础聊天应用 → 流式/拆条/延迟队列 → 记忆自动提取（回忆卡/喜好卡）→ UI 精致化 + 设计系统（`css/tokens.css` token 单一来源）→ 用户自建角色 → 移动端深度适配 → CI 自动化（语法/数据完整性/版本同步/APK 构建）→ 多模态图片输入 + Tavily 联网搜索 → 检查更新双源 + 发版 bump 命令化 → 长对话分批渲染 + 女友个人主页化 → 长效记忆后端移除、路由收敛 DeepSeek 直连（#33）→ 语音系统 v1 + StepAudio 情绪朗读（#38/#42/#44）→ 主题收敛纯白/纯黑/自定义三选（#48/#49）→ 切会话提速 + 首屏 50 条（#56）
 - **进行中**：以 [GitHub Issues 页](https://github.com/chemmy-11/moonveil/issues) 为准（open 状态的卡就是当前待办；本文件不维护快照，避免过时）。截至 2026-09-03 已落地的代表里程碑：记忆卡两层改造（#1）、键盘交互修复（#4）、字体选择（#5）、color-mix 主题派生（#11）、月见主题（#12）、自定义壁纸/主题（#15）
 - **规划中**：游戏内容方向 G1-G4（关系阶段系统 / 随机生活事件 / 记忆驱动剧情回调 / 成就收集），见 roadmap 第三节
 
@@ -45,13 +45,12 @@ cd moonveil
 # 2. 装依赖（dev server 需要）
 npm install
 
-# 3. 启动开发服务器（单端口 8080）
+# 3. 启动开发服务器（8080）
 npm run dev
 ```
 
 浏览器打开 `http://localhost:8080`，首次进入在侧栏「设置 API Key」里填入 key 即可开聊。
 
-- **记忆后端是可选的**：不配置照样能聊（本地记忆存储开箱即用）
 - **Android APK 不用本地搭环境**：CI 会在每次 push 后自动构建，GitHub 仓库页 → Actions → 最新一次运行 → Artifacts 下载 `moonveil-debug-apk` 直接安装
 - 第一晚建议只跑 Web 端，把 App 完整玩一遍，对照 issues 找感觉
 
@@ -62,10 +61,11 @@ index.html          主入口（聊天 UI + 各弹窗）
 css/tokens.css      设计 token 单一来源（主题/字号/字体都在这覆盖）
 css/style.css       桌面端样式    css/mobile.css 移动端样式
 js/data.js          角色人设 prompt + LLM 配置（与 personas/ 必须同步！）
-js/app.js           聊天引擎（对话/记忆/主题/构建注入，最大文件）
+js/app.js           聊天引擎（对话/记忆/主题/音效/更新，最大文件）
 js/version.js       版本号唯一源头（build.sh 自动注入 index.html）
 personas/           角色记忆与人格源文件（md）
 scripts/build.sh    一键构建 APK（md5 校验 + 版本一致性）
+scripts/bump-version.sh    发版 bump：三处版本同步一条命令（issue #25）
 .github/            issue/PR 模板 + CI 工作流
 docs/               roadmap、协作规范、本文档
 ```
@@ -73,7 +73,7 @@ docs/               roadmap、协作规范、本文档
 **四条硬约定（CI 会拦截违规）**：
 
 1. 改 `personas/*.md` 必须**同步 `js/data.js`** 里的 prompt（反之亦然）
-2. 发版改 `js/version.js` 后跑一次 `bash scripts/build.sh`（自动同步 index.html 缓存号），`android/app/build.gradle` 的 versionName/versionCode 手动同步
+2. 发版跑 `bash scripts/bump-version.sh [版本号]`（一条命令同步 `js/version.js`、`android/app/build.gradle` 的 versionName/versionCode、index.html 缓存号，并内置 versionCode 递增校验）
 3. 新增 css/js 静态文件要补进 `scripts/build.sh` 的 md5 校验清单（历史教训：tokens.css 漏过一次）
 4. 代码里不许出现 API key / token（CI 密钥扫描会拦）
 
@@ -150,6 +150,7 @@ git switch main && git pull      # 回主线并拉最新
 git switch -c feat/xxx           # 建功能分支
 git add -A && git commit -m "feat: xxx" && git push   # 提交三连
 bash scripts/build.sh            # 本地构建 APK（Windows 需 JDK 17）
+bash scripts/bump-version.sh 0.x.y    # 发版三处版本同步（不带参数则 patch +1）
 ```
 
 - 卡住先看：CI 日志 → issue 讨论 → 问 agent「这个报错什么意思、怎么修」

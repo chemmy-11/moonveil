@@ -11,7 +11,7 @@ import urllib.request
 
 sys.stdout.reconfigure(encoding="utf-8")
 
-OWNER, REPO = "chemmy-11", "moonveil"
+OWNER, REPO = "chemmy-11", "moonveil-archive"
 TOKEN = os.environ.get("GITHUB_TOKEN")
 if not TOKEN:
     sys.exit("缺少 GITHUB_TOKEN 环境变量")

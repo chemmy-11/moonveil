@@ -1,6 +1,6 @@
 # 月见 Issue / PR 提报规范
 
-> 最后更新：2026-09-02（同日增补：.github 模板固化 + CI 流程，见 §五）· 适用主仓库 `chemmy-11/moonveil`
+> 最后更新：2026-09-26（纠偏 §3.4 主题名至现行四主题；§5.3 增补移动端 E2E 方法论）· 适用主仓库 `chemmy-11/moonveil`
 >
 > 定位：月见是小团队协作项目（owner + 开发组成员 + 多个 AI agent 会话），本文规范「人 / AI agent」两类提交者的 Issue 与 PR 行为，与 `docs/roadmap.md`（里程碑与方向）、`docs/collab-onboarding.md`（新成员入门）、README（项目定位）互补：**roadmap 记方向，issue 记可执行事项，PR 记落地过程**。
 
@@ -106,7 +106,8 @@
 - [ ] 提交信息符合 `<动词>: <改了什么>`；改 personas → `js/data.js` 已同步（或反之）
 - [ ] 发版时：跑过 `bash scripts/bump-version.sh [版本号]`（一条命令同步 `js/version.js` 唯一源头 + `build.gradle` versionName/versionCode + index.html `?v=`，内置 versionCode 递增校验——**OTA 依赖 versionCode 递增**）
 - [ ] 新增了 css/js 静态文件 → `scripts/build.sh` 的 md5 校验清单已补录（历史教训：tokens.css 漏过一次）
-- [ ] Web + Android 双端验证过；动了主题/配色 → 三主题回归（珍珠潮汐 / 海港 / 月见）+ 自定义主题（若有自定义壁纸在用）
+- [ ] **删除/重构类改动：主链路 mock 冒烟必须实跑**——发一条消息（含带图路径）走到回复上屏，不止验启动。（#59 教训：`node --check` 抓不住运行时 ReferenceError，构建全绿 ≠ 能用；0.2.10/0.2.11 因此带病发版）
+- [ ] Web + Android 双端验证过；动了主题/配色 → 三主题回归（纯白 / 纯黑 OLED / 角色专属）+ 自定义主题（若有自定义壁纸在用）
 - [ ] `bash scripts/build.sh` 全绿（md5 逐字节校验 + 版本一致性）
 - [ ] 代码与正文无 token/密钥；不含用户私人数据
 - [ ] 关联 issue 已引用，合并后在 issue 留结论 comment 再关闭
@@ -124,8 +125,8 @@
 
 ## 四、隐私与红线（本仓私有化后新增）
 
-1. 本仓为公开展示仓：人设内置「绝不输出露骨成人内容」硬约束，所有角色文本保持全年龄向。
-2. 涉及人设文本的改动必须与公开定位一致，走**独立的 PR** 专门处理，不与功能改动混提。
+1. 本仓为公开展示仓：人设内置「绝不输出任何成人/性相关内容」硬约束，所有角色文本保持全年龄向。
+2. 涉及人设文本的改动必须与公开定位一致，走**独立的 PR** 专门处理，不与功能改动混提。发布边界见 `docs/publication-policy.md`。
 3. token / 密钥等敏感配置不写入代码与文档。
 4. 素材版权可商用（`成品-1.png` 等版权不明素材已被 .gitignore，不入库）。
 
@@ -164,3 +165,12 @@
 - 四主题回归、双端真机验证：需要真人/agent 视觉判断，保留在 PR 清单人工核对（可借 gui-test-screenshots 留证）。
 - 人设语义质量：归 Correction 层，不进 CI。
 - OTA 发布（推 `moonveil-updates` + latest.json）：仅发版手动触发，不挂 CI。
+
+### 5.4 移动端 E2E 方法论（2026-09-26 沉淀）
+
+Android 模拟器（AVD mm_test）验证 WebView 内页面状态的方法与坑：
+
+- **页面内状态读改走 CDP**：`adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`（pid 从 `/proc/net/unix` 找 `com.aigf.app` 进程）→ `Runtime.evaluate` 读 DOM/computed style、驱动 `scrollTop`。UI Automator 树只能看到 WebView 容器，看不到内部 DOM。
+- **手势注入滚不动 WebView 内部滚动容器**：`adb shell input swipe` / UI Automator swipe 对 Capacitor WebView 的内部 `overflow-y` 容器无效（scrollTop 纹丝不动）——验证滚动驱动逻辑（如 `--pc` 收起）改用 CDP 赋值 `scrollTop`。
+- **scroll 事件异步派发**：JS 赋值 `scrollTop` 后须拆步等待（≥200ms）再读 `--pc` 类派生状态；同一步 evaluate 里赋值+读值读到的是旧值。内容不足时给容器临时 append 垫高元素再滚，验证完移除。
+- **主链路 mock 冒烟**：CDP 重写 `window.fetch` 拦截 LLM endpoint 返回 mock SSE 流 + `localStorage` 塞假 key，即可在无 key 环境走通「发消息 → 流式回复拆条上屏」全链路；logcat（`Capacitor/Console`）可交叉验证 `[sendMessage]` / `[webSearch]` 日志。

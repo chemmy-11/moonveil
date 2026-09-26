@@ -28,9 +28,8 @@ body:
       label: 主题
       description: 复现时所处的主题
       options:
-        - 珍珠潮汐
-        - 海港
-        - 月见
+        - 纯白
+        - 纯黑
         - 自定义主题
         - 与主题无关
     validations:

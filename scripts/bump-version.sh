@@ -19,9 +19,10 @@ fi
 
 echo "$NEXT" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$' || { echo "!! 版本号格式应为 x.y.z，得到: $NEXT"; exit 1; }
 
-# versionCode 规则：(major+1)*1000 + minor*10 + patch（0.2.5 → 1025），必须严格递增——OTA 检查更新依赖它
+# versionCode 规则：(major+1)*10000 + minor*100 + patch（0.3.0 → 10300），必须严格递增——OTA 检查更新依赖它
+# （2026-09-26 起 v2 编码：旧式 minor*10+patch 在 patch≥10 时进位污染 minor 位——0.2.13 ↔ 1033，导致 0.3.0 反算 1030 倒退）
 IFS=. read -r NMA NMI NPA <<< "$NEXT"
-CODE=$(( (NMA + 1) * 1000 + NMI * 10 + NPA ))
+CODE=$(( (NMA + 1) * 10000 + NMI * 100 + NPA ))
 OLD_CODE=$(sed -n 's/.*versionCode \([0-9]*\).*/\1/p' android/app/build.gradle)
 if [ "$CODE" -le "$OLD_CODE" ]; then
   echo "!! versionCode 不递增（$OLD_CODE → $CODE），OTA 会失灵；请检查目标版本号"

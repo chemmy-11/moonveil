@@ -7,7 +7,7 @@
 | 仓库 | 可见性 | 角色 |
 |---|---|---|
 | `chemmy-11/moonveil` | 公开 | 展示快照：项目门面 + 全年龄版人设 + 工程方法沉淀 |
-| `chemmy-11/moonveil-updates` | 公开 | OTA 发布仓（latest.json + APK），应用内「检查更新」拉取 |
+| `chemmy-11/moonveil-updates-public` | 公开 | 公开版 OTA 更新源（脱敏构建 latest.json + APK），本仓应用内「检查更新」拉取（见第四节） |
 
 - 公开仓是**展示快照**，从开发主线单向同步；反向合并永不发生。
 - 同步是**低频整树快照**：单提交覆盖，不搬中间历史；公开仓已有历史默认不重写。
@@ -32,10 +32,14 @@
    - `css/`（含主题文档）：删去不在版角色的主题色块。
    - `README.md` / `docs/`：角色表、目录树、计数措辞、仓库链接逐项核对。
    - `.github/workflows/ci.yml`：角色数据校验与 personas 引用校验的数量断言 = 实际角色数（当前 2）。
+   - `js/app.js`：更新源 URL 改写为 `moonveil-updates-public`（见第四节——整树覆盖后必查项）。
 4. 本地复刻 CI check 六项（语法 / 角色数据 / personas 引用 / 版本同步 / md5 清单 / 密钥扫描），全绿才推送。
 5. 单提交同时推 `main` 与 `master`（保持同 sha），盯 CI 到绿。
 6. 同步提交信息只描述公开版动作（如「移除第三角色」「与主线 vX.Y.Z 同步」），不引入边界外内容。
 
-## 四、更新源策略（待定项）
+## 四、更新源策略（双源定案 2026-09-27）
 
-应用内「检查更新」当前指向统一发布仓（`moonveil-updates`）。公开快照构建与日常发版是否拆分为两个更新源待定；若拆分，本文件需登记 app.js 更新源 URL 的改写规则，并纳入第三节第 3 步 checklist。
+- `chemmy-11/moonveil-updates`：日常发版源（开发主线构建，本仓不同步）。
+- `chemmy-11/moonveil-updates-public`：公开版更新源——公开快照构建的脱敏 APK + latest.json。
+- **本仓 `js/app.js` 的更新源 URL 固定指向 `moonveil-updates-public`**（`RAW_URL` / `API_URL` 两处 + 注释）。这是公开仓与开发主线唯一登记在案的代码差异：整树覆盖同步时**必须重新应用本改写**（已纳入第三节第 3 步 checklist）。
+- 公开版发版纪律与主线一致：APK 文件名带版本号（`AI-GF-<版本>.apk`）、latest.json 的 `apk_url` 指向带版本文件名、更新仓只保留当前版 + latest.json、更新前解包复查内容边界（第二节）。

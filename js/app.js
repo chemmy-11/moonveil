@@ -269,7 +269,7 @@ const App = {
   },
 
   // ═══ 检查更新（公开发布仓库渠道）═══
-  // 更新源：chemmy-11/moonveil-updates（latest.json + 带版本号的 APK，匿名可读）
+  // 更新源：chemmy-11/moonveil-updates-public（公开版更新源，latest.json + 带版本号的 APK，匿名可读；与主线更新源不同——见 docs/publication-policy.md §四）
   // 发布流程：上传 AI-GF-<版本>.apk → 更新 latest.json（apk_url 指向带版本文件名）→ 手机点「检查更新」
   // ⚠ 双源设计（2026-09-03 教训）：raw.githubusercontent.com 的 Fastly 边缘缓存 max-age=300
   // 且缓存键忽略 query（cache-busting 无效），发版后 5 分钟内手机可能读到旧 latest.json 误判
@@ -278,8 +278,8 @@ const App = {
     const btn = document.getElementById('sb-update');
     btn.disabled = true;
     btn.style.opacity = '.55';
-    const RAW_URL = 'https://raw.githubusercontent.com/chemmy-11/moonveil-updates/master/latest.json';
-    const API_URL = 'https://api.github.com/repos/chemmy-11/moonveil-updates/contents/latest.json';
+    const RAW_URL = 'https://raw.githubusercontent.com/chemmy-11/moonveil-updates-public/master/latest.json';
+    const API_URL = 'https://api.github.com/repos/chemmy-11/moonveil-updates-public/contents/latest.json';
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);   // 15s 超时兜底
     const fetchJson = async (url) => {

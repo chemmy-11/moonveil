@@ -112,6 +112,19 @@
 - [ ] 代码与正文无 token/密钥；不含用户私人数据
 - [ ] 关联 issue 已引用，合并后在 issue 留结论 comment 再关闭
 
+### 3.4.1 新增内置角色 checklist（issue #7 首次沉淀，2026-09-28）
+
+按「季萤 → 三男角色」两轮实践固化的接线清单，新增内置角色时逐项核对：
+
+- [ ] `personas/<拼音>.md` 人设源 + `js/data.js` 角色 prompt **逐字一致**（推荐从 data.js 提取生成 md，脚本镜像防漂移；CI ③ 只查引用存在性，一致性靠自查）
+- [ ] `js/data.js` 角色对象字段齐全：id/name/tag/mbti/color/avatar/status/greeting/quickEmoji/profile(signature/basic/bio/cards)/prompt；prompt 含 PART A / PART B / Layer 0 结构与全年龄硬约束（CI ② 断言）
+- [ ] prompt 记忆协议的【喜好】人称与角色性别一致（女性角色「她」、男性角色「他」）
+- [ ] `css/style.css` 补 `body[data-gf="<id>"]` 主题色块（--gf-color-base/soft/grad/on-gf 四件套；与既有角色色拉开区分）
+- [ ] 头像 `assets/<id>.webp` 入库 + `scripts/build.sh` md5 清单补录
+- [ ] **默认启用策略**：新角色**不进** `DEFAULT_ENABLED_IDS`（app.js）——入库待用户从角色库启用；只有「首发内置」才在默认集
+- [ ] CI 角色数断言同步：ci.yml 角色完整性（`ids.length`）与 personas 引用数（`refs.length`）两处硬编码
+- [ ] 浏览器实测：库内分组与开关、启用后切换（主题色派生/头像/开场白）、个人主页、黑白主题下色派生
+
 ### 3.5 合并与收尾
 
 - 合并方式：优先 **squash**，让 `main` 历史保持「一条提交 = 一个完整改动」的粒度（与既有直推历史一致）；squash 标题即最终提交信息，仍遵循第 3.2 节格式。
@@ -174,3 +187,5 @@ Android 模拟器（AVD mm_test）验证 WebView 内页面状态的方法与坑�
 - **手势注入滚不动 WebView 内部滚动容器**：`adb shell input swipe` / UI Automator swipe 对 Capacitor WebView 的内部 `overflow-y` 容器无效（scrollTop 纹丝不动）——验证滚动驱动逻辑（如 `--pc` 收起）改用 CDP 赋值 `scrollTop`。
 - **scroll 事件异步派发**：JS 赋值 `scrollTop` 后须拆步等待（≥200ms）再读 `--pc` 类派生状态；同一步 evaluate 里赋值+读值读到的是旧值。内容不足时给容器临时 append 垫高元素再滚，验证完移除。
 - **主链路 mock 冒烟**：CDP 重写 `window.fetch` 拦截 LLM endpoint 返回 mock SSE 流 + `localStorage` 塞假 key，即可在无 key 环境走通「发消息 → 流式回复拆条上屏」全链路；logcat（`Capacitor/Console`）可交叉验证 `[sendMessage]` / `[webSearch]` 日志。
+- **⚠ IAB 后台标签定时器节流（2026-09-28 沉淀）**：IAB 窗口不可见时 Chrome 对页面 `setTimeout` 节流（约 1 次/秒）——mock 慢流里用 `setTimeout` 造逐字延迟会让 SSE 循环被拖死（症状：流永不完成、`read` 计数每秒只 +1，极易误判为产品 bug）。**mock 流的时间交错用已 resolve 的 Promise 微任务（`await Promise.resolve()`），零定时器**；真实节律（pumpQueue 间隔等）留真机/前台验证。另：mock 有状态（pos 游标）会被并发的记忆提取小调用（smallLLMCall 同走 `window.fetch`）共享消耗——mock 按请求特征分发（读 body 的 `max_tokens`/`stream` 区分主调用与辅助调用），每请求独立游标。
+- **⚠ 清测试状态要清内存再清存储**：`App.state.*` 在 init 时已加载，只清 localStorage 不影响内存，`saveHistory` 会把内存全量写回——断言前 `App.state.histories.<id> = []` + `localStorage.setItem` 双清再 `renderHistory()`。

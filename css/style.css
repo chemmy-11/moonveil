@@ -1076,6 +1076,16 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   margin: 14px 0 6px;
 }
 .modal-field-label:first-of-type { margin-top: 4px; }
+/* 开放平台跳转链接（issue #90）：仅 DeepSeek 字段；WebView 里 target=_blank 不可靠，
+   由 JS 拦截走 App.openUrl（原生）/ window.open（Web），见 bindEvents */
+.key-link {
+  color: var(--gf-color);
+  font-size: var(--text-xs);
+  margin-left: 8px;
+  letter-spacing: normal;
+  text-decoration: none;
+}
+.key-link:hover { text-decoration: underline; }
 .modal-desc { font-size: var(--text-base); color: var(--text-dim); margin: 10px 0 16px; line-height: var(--lh-loose); }
 .modal input[type="password"], .modal input[type="text"] {
   width: 100%;

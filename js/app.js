@@ -3882,6 +3882,18 @@ ${favList || '（无）'}`,
     // API Key
     this.el.apiSaveBtn.addEventListener('click', () => this.handleApiKeySave());
     this.el.apiSkipBtn.addEventListener('click', () => this.closeApiModal());
+    // 开放平台跳转链接（issue #90）：裸 <a> 依赖 Capacitor 默认行为——
+    // 主 WebView 导航到 allowNavigation 外的 https 域名自动转系统浏览器（模拟器实测 ✓）。
+    // ⚠ 原生端勿拦勿加 target=_blank：AAR 无 onCreateWindow，_blank 事件会被丢弃；
+    //   @capacitor/app 6 已移除 openUrl。仅 Web 端拦截改新开标签
+    if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) {
+      document.querySelectorAll('.key-link').forEach(a => {
+        a.addEventListener('click', (e) => {
+          e.preventDefault();
+          window.open(a.href, '_blank', 'noopener');
+        });
+      });
+    }
     this.el.apiKeyInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.handleApiKeySave();
     });

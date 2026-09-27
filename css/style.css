@@ -108,6 +108,24 @@ body[data-gf="jiying"] {
   --gf-grad: linear-gradient(135deg, #A8BCD8, #8FA8C9);
   --on-gf: #2F3B52;                 /* 雾蓝底上的深蓝字（保证对比） */
 }
+body[data-gf="ouyangyue"] {
+  --gf-color-base: #7C9DA8;         /* 欧阳越 雾青（静水深流，issue #7） */
+  --gf-color-soft: rgba(124, 157, 168, .2);
+  --gf-grad: linear-gradient(135deg, #9CB7C0, #7C9DA8);
+  --on-gf: #2B3E46;                 /* 雾青底上的深青字 */
+}
+body[data-gf="jiangye"] {
+  --gf-color-base: #B08968;         /* 江野 拿铁赭棕（烟火气，与唐苓杏橙拉开明度） */
+  --gf-color-soft: rgba(176, 137, 104, .2);
+  --gf-grad: linear-gradient(135deg, #C8A684, #B08968);
+  --on-gf: #46332A;                 /* 赭棕底上的深棕字 */
+}
+body[data-gf="linle"] {
+  --gf-color-base: #CFA84C;         /* 林乐 芥末黄（暖而不艳） */
+  --gf-color-soft: rgba(207, 168, 76, .22);
+  --gf-grad: linear-gradient(135deg, #E0C375, #CFA84C);
+  --on-gf: #4A3D1E;                 /* 芥末黄底上的深褐字 */
+}
 
 /* ═══ 纯黑主题（OLED · 真黑底 + 深灰分层）═══
    issue #48：接替月见的暗色生态位；无壁纸，层次全靠分层底色 + 细边框 */

@@ -215,6 +215,7 @@ const App = {
   VISUAL_PACKS: {
     wanwan:  { hero: 'assets/wanwan-hero.webp',  chatWall: 'assets/wanwan-chat.webp' },
     tangtang: { hero: 'assets/tangtang-hero.webp', chatWall: 'assets/tangtang-chat.webp' },
+    jiying: { hero: 'assets/jiying-hero.webp', chatWall: 'assets/jiying-chat.webp' },
   },
   // ═══ 字体偏好（issue #5）：四档选项，key 存 localStorage('aigf_font') ═══
   FONT_OPTIONS: [

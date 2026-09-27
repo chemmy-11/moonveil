@@ -1,6 +1,6 @@
 {
-  "appId": "com.aigf.app",
-  "appName": "月见",
+  "appId": "com.aigf.app.public",
+  "appName": "月见 Public",
   "webDir": "www",
   "server": {
     "androidScheme": "https"

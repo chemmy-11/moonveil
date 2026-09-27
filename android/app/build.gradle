@@ -4,7 +4,7 @@ android {
     namespace "com.aigf.app"
     compileSdk rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "com.aigf.app"
+        applicationId "com.aigf.app.public"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 10305
@@ -16,8 +16,22 @@ android {
             ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        // 公开版固定签名（密钥随仓发布，仅绑定公开包名，非秘密）——保证 CI 构建间签名一致，
+        // OTA 可覆盖安装；与开发版（本地 debug key）签名不同，包名也不同，两版可并存
+        pubEdition {
+            storeFile file('moonveil-public.jks')
+            storePassword 'moonveil-public'
+            keyAlias 'moonveil-public'
+            keyPassword 'moonveil-public'
+        }
+    }
     buildTypes {
+        debug {
+            signingConfig signingConfigs.pubEdition
+        }
         release {
+            signingConfig signingConfigs.pubEdition
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

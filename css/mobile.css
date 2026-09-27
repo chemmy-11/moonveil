@@ -123,6 +123,7 @@
 
   /* ─── 个人主页：移动端（全屏基座统一在 style.css，这里只做状态栏与安全区）─── */
   .profile-panel { top: var(--status-bar-h, 0px); }   /* 全屏落在状态栏之下 */
+  .api-panel { top: var(--status-bar-h, 0px); }
   /* 关闭键避开状态栏 */
   .profile-close { top: calc(var(--status-bar-h, 0px) + 12px); }
   .profile-body { padding: 14px 16px calc(20px + env(safe-area-inset-bottom, 0px)); }

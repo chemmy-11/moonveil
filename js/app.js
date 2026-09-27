@@ -148,10 +148,17 @@ const App = {
       msgCopy: document.getElementById('msg-copy'),
       msgDelete: document.getElementById('msg-delete'),
       apiStatusText: document.getElementById('api-status-text'),
-      apiModal: document.getElementById('api-modal'),
+      apiPanel: document.getElementById('api-panel'),
       apiKeyInput: document.getElementById('api-key-input'),
       apiSaveBtn: document.getElementById('api-save-btn'),
-      apiSkipBtn: document.getElementById('api-skip-btn'),
+      apiBackBtn: document.getElementById('api-back-btn'),
+      customLlmToggle: document.getElementById('custom-llm-toggle'),
+      customLlmForm: document.getElementById('custom-llm-form'),
+      customLlmName: document.getElementById('custom-llm-name'),
+      customLlmBase: document.getElementById('custom-llm-base'),
+      customLlmKey: document.getElementById('custom-llm-key'),
+      customLlmModel: document.getElementById('custom-llm-model'),
+      customLlmTest: document.getElementById('custom-llm-test'),
       createOverlay: document.getElementById('create-overlay'),
       createModal: document.getElementById('create-modal'),
       libraryOverlay: document.getElementById('library-overlay'),
@@ -547,6 +554,7 @@ const App = {
     return localStorage.getItem('aigf_deep_thinking') !== '0';   // 默认开
   },
   toggleThinking() {
+    if (this.useCustomLlm()) { this.toast('自定义供应商下深度思考不可用（thinking 为 DeepSeek 系扩展参数）'); return; }
     const on = !this.deepThinkingOn();
     try { localStorage.setItem('aigf_deep_thinking', on ? '1' : '0'); } catch (e) { /* 忽略 */ }
     this.refreshThinkUi();
@@ -554,9 +562,11 @@ const App = {
   },
   refreshThinkUi() {
     const on = this.deepThinkingOn();
+    const locked = this.useCustomLlm();   // 自定义供应商：开关置灰（issue #18）
     if (this.el.thinkPill) {
-      this.el.thinkPill.classList.toggle('active', on);
-      this.el.thinkPill.setAttribute('aria-pressed', on ? 'true' : 'false');
+      this.el.thinkPill.classList.toggle('active', on && !locked);
+      this.el.thinkPill.classList.toggle('locked', locked);
+      this.el.thinkPill.setAttribute('aria-pressed', (on && !locked) ? 'true' : 'false');
     }
   },
   // ═══ 清空输入（issue #74）：× 清除文字与待发图片 ═══
@@ -790,7 +800,7 @@ const App = {
   async playGfTTS(mid, text, uiEl) {
     if (!this.hasStepKey()) {
       this.toast('先在「设置 API Key」里填写阶跃 StepFun Key 才能朗读');
-      this.openApiModal();
+      this.openApiPanel();
       return;
     }
     if (!this._ttsCache) this._ttsCache = new Map();
@@ -913,7 +923,7 @@ const App = {
     }
     if (!this.dashKey()) {
       this.toast('先在「设置 API Key」里填写千问 DashScope Key 才能发语音');
-      this.openApiModal();
+      this.openApiPanel();
       return;
     }
     this.state.voiceMode = !this.state.voiceMode;
@@ -2408,10 +2418,10 @@ const App = {
       console.error('[sendMessage]', e, e.body || '');
       if (e.message === 'NO_API_KEY') {
         this.toast('请先配置 API Key');
-        this.openApiModal();
+        this.openApiPanel();
       } else if (e.status === 401 || e.status === 403) {
         this.toast('API Key 无效，请检查后重试');
-        this.openApiModal();
+        this.openApiPanel();
       } else if (e.status === 402) {
         this.toast('API 余额不足，请到 DeepSeek 平台充值后重试');
       } else if (e.status === 429) {
@@ -2990,9 +3000,12 @@ ${favList || '（无）'}`,
   // 主聊天直连 DeepSeek（EbbingFlow 记忆后端已移除，issue #33）；
   // 记忆提取类辅助调用（smallLLMCall）同样直连。
   async callLLM(systemPrompt, gfId, userMessage, onDelta, img) {
-    const cfg = LLM_CONFIG;
-    const endpoint = cfg.endpoint;   // ⚠ P0 回归修复（issue #59）：#33 移除 EbbingFlow 时误删了 endpoint 声明，fetch 处引用未定义变量——0.2.10/0.2.11 起聊天发消息必失败（回归测试发现）
-    const apiKey = localStorage.getItem('deepseek_api_key');
+    // 自定义供应商（issue #18）：开关开 → endpoint/model/key 走自定义（OpenAI 兼容），
+    // 其余参数（temperature/max_tokens/timeout）沿用 LLM_CONFIG token
+    const useCustom = this.useCustomLlm();
+    const cfg = useCustom ? Object.assign({}, LLM_CONFIG, this.customLlmCfg()) : LLM_CONFIG;
+    const endpoint = useCustom ? this.normalizeChatUrl(cfg.baseUrl) : cfg.endpoint;   // ⚠ P0 回归修复（issue #59）：#33 移除 EbbingFlow 时误删了 endpoint 声明，fetch 处引用未定义变量——0.2.10/0.2.11 起聊天发消息必失败（回归测试发现）
+    const apiKey = useCustom ? cfg.apiKey : localStorage.getItem('deepseek_api_key');
     if (!apiKey) throw new Error('NO_API_KEY');
 
     // system prompt + 最近 10 轮对话 + 当前消息
@@ -3041,7 +3054,7 @@ ${favList || '（无）'}`,
     const timeStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（周${week}）${pad(now.getHours())}:${pad(now.getMinutes())}`;
     // 深度思考开启时注入内心独白协议（issue #12）：独白走正文 <inner> 定界段，
     // 模型 reasoning_content 思维链不再入库/展示（口吻与结构不可控，出戏且可能暴露提示词写法）。
-    const innerProto = this.deepThinkingOn()
+    const innerProto = (this.deepThinkingOn() && !useCustom)
       ? '\n【内心独白】每次回复的最开头，先写一段内心独白，用 <inner> 和 </inner> 包起来：第一人称「我」、中文、一两句话，写你此刻心里真实的想法或情绪，贴合你的性格，像自言自语，不是对玩家说的话；不要写成分析、推理或回复草稿。写完 </inner> 换行，再开始正式回复正文。除开头这一段外，正文任何位置不要再出现 <inner> 标记。'
       : '';
     messages.push({
@@ -3056,12 +3069,16 @@ ${favList || '（无）'}`,
       model: cfg.model,
       messages: messages,
       stream: true,
-      // 深度思考开关（issue #74 用户可控 / #34 显式参数）：关态显式 disabled，开态 enabled+high
-      thinking: this.deepThinkingOn() ? cfg.thinking : { type: 'disabled' },
       temperature: cfg.temperature,
       max_tokens: cfg.max_tokens,
     };
-    if (this.deepThinkingOn()) body.reasoning_effort = cfg.reasoning_effort;
+    // thinking / reasoning_effort 为 DeepSeek 系扩展参数（issue #18）：仅官方通道发送；
+    // 严格 OpenAI 兼容网关可能对未知字段 400，自定义供应商下默认完全不发送
+    if (!useCustom) {
+      // 深度思考开关（issue #74 用户可控 / #34 显式参数）：关态显式 disabled，开态 enabled+high
+      body.thinking = this.deepThinkingOn() ? cfg.thinking : { type: 'disabled' };
+      if (this.deepThinkingOn()) body.reasoning_effort = cfg.reasoning_effort;
+    }
 
     const controller = new AbortController();
     this.state.activeController = controller;   // 暴露给打断逻辑
@@ -3122,27 +3139,116 @@ ${favList || '（无）'}`,
   // ═══ API Key ═══
   checkApiKey() {
     const key = localStorage.getItem('deepseek_api_key');
-    if (!key) this.openApiModal();
+    if (!key) this.openApiPanel();
     this.updateApiStatus();
   },
-  openApiModal() {
+  // -- 自定义 LLM 供应商（issue #18）：OpenAI 兼容接口（Base URL + Key + Model）--
+  // 存储：aigf_custom_llm = JSON{ name, baseUrl, apiKey, model }，aigf_use_custom_llm = '1'/'0'
+  // 均只存 localStorage，与现有 key 策略一致（不进仓、不进存档导出）
+  useCustomLlm() {
+    return localStorage.getItem('aigf_use_custom_llm') === '1';
+  },
+  customLlmCfg() {
+    try { return JSON.parse(localStorage.getItem('aigf_custom_llm') || '{}'); }
+    catch (e) { return {}; }
+  },
+  // URL 规范化（issue #18）：根 / 带 /v1 / 带全路径三种填法归一为 <base>/v1/chat/completions，不重复拼接
+  normalizeChatUrl(base) {
+    let u = (base || '').trim().replace(/\/+$/, '');
+    if (!u) return '';
+    if (/\/chat\/completions$/.test(u)) return u;
+    if (/\/v1$/.test(u)) return u + '/chat/completions';
+    return u + '/v1/chat/completions';
+  },
+  readCustomLlmForm() {
+    return {
+      name: this.el.customLlmName.value.trim(),
+      baseUrl: this.el.customLlmBase.value.trim(),
+      apiKey: this.el.customLlmKey.value.trim(),
+      model: this.el.customLlmModel.value.trim(),
+    };
+  },
+  refreshCustomLlmUi() {
+    const on = this.useCustomLlm();
+    this.el.customLlmToggle.classList.toggle('on', on);
+    this.el.customLlmToggle.setAttribute('aria-checked', on ? 'true' : 'false');
+    this.el.customLlmForm.classList.toggle('off', !on);   // 关态整块半透明只读
+  },
+  toggleCustomLlm() {
+    const on = !this.useCustomLlm();
+    if (on) {
+      const c = this.readCustomLlmForm();
+      if (!c.baseUrl || !c.apiKey || !c.model) { this.toast('先填写 Base URL、API Key 和 Model ID 再启用'); return; }
+    }
+    try { localStorage.setItem('aigf_use_custom_llm', on ? '1' : '0'); } catch (e) { /* 忽略 */ }
+    this.refreshCustomLlmUi();
+    this.refreshThinkUi();
+    this.updateApiStatus();
+    this.toast(on ? '已启用自定义供应商，对话将走该通道' : '已关闭，对话回落 DeepSeek 官方通道');
+  },
+  // 测试连接：极小请求（max_tokens=1，非流式）验证 URL/Key/Model，失败 toast 给可读原因
+  async testCustomLlm() {
+    const c = this.readCustomLlmForm();
+    if (!c.baseUrl || !c.apiKey || !c.model) { this.toast('Base URL、API Key、Model ID 都要填'); return; }
+    const url = this.normalizeChatUrl(c.baseUrl);
+    const btn = this.el.customLlmTest;
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = '测试中…';
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 10000);
+    try {
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + c.apiKey },
+        body: JSON.stringify({ model: c.model, messages: [{ role: 'user', content: 'ping' }], max_tokens: 1, stream: false }),
+        signal: ctrl.signal,
+      });
+      if (resp.ok) this.toast('连接成功 ✓（' + c.model + '）');
+      else if (resp.status === 401 || resp.status === 403) this.toast('Key 无效或无权限（HTTP ' + resp.status + '）');
+      else if (resp.status === 404) this.toast('接口不存在（404）——检查 Base URL');
+      else {
+        let detail = '';
+        try { const j = await resp.json(); detail = (j.error && j.error.message) || ''; } catch (e) { /* 非 JSON */ }
+        this.toast('失败（HTTP ' + resp.status + '）' + (detail ? '：' + detail.slice(0, 80) : ''));
+      }
+    } catch (e) {
+      this.toast(e.name === 'AbortError' ? '连接超时——检查网络或 Base URL' : '网络错误：' + (e.message || '无法连接'));
+    } finally {
+      clearTimeout(timer);
+      btn.disabled = false;
+      btn.textContent = old;
+    }
+  },
+  openApiPanel() {
     const saved = localStorage.getItem('deepseek_api_key');
     if (saved) this.el.apiKeyInput.value = saved;
     const dash = localStorage.getItem('dashscope_api_key');
     if (dash) this.el.dashscopeKeyInput.value = dash;
     const step = localStorage.getItem('stepfun_api_key');
     if (step) this.el.stepKeyInput.value = step;
-    this.el.apiModal.classList.remove('hidden');
-    this.el.apiKeyInput.focus();
+    const c = this.customLlmCfg();
+    this.el.customLlmName.value = c.name || '';
+    this.el.customLlmBase.value = c.baseUrl || '';
+    this.el.customLlmKey.value = c.apiKey || '';
+    this.el.customLlmModel.value = c.model || '';
+    this.refreshCustomLlmUi();
+    this.el.apiPanel.classList.remove('hidden');
+    if (!saved) this.el.apiKeyInput.focus();
   },
-  closeApiModal() {
-    this.el.apiModal.classList.add('hidden');
+  closeApiPanel() {
+    this.el.apiPanel.classList.add('hidden');
   },
   handleApiKeySave() {
+    const custom = this.readCustomLlmForm();
+    if (this.useCustomLlm() && (!custom.baseUrl || !custom.apiKey || !custom.model)) {
+      this.toast('自定义供应商已启用：Base URL、API Key、Model ID 都要填'); return;
+    }
     const key = this.el.apiKeyInput.value.trim();
-    if (!key) { this.toast('Key 不能为空'); return; }
+    if (!key && !this.useCustomLlm()) { this.toast('Key 不能为空（或改用自定义供应商）'); return; }
     const wasFirstKey = !localStorage.getItem('deepseek_api_key') && !!key;
-    localStorage.setItem('deepseek_api_key', key);
+    if (key) localStorage.setItem('deepseek_api_key', key);
+    else localStorage.removeItem('deepseek_api_key');   // 自定义供应商下允许只填自定义通道
     // 网络搜索（可选，issue #9）：Tavily Key；留空即清除并关闭搜索开关
     // 语音转文字 key（issue #38）：DashScope——留空即清除并退出语音模式
     const dash = this.el.dashscopeKeyInput.value.trim();
@@ -3155,8 +3261,17 @@ ${favList || '（无）'}`,
     const step = this.el.stepKeyInput.value.trim();
     if (step) localStorage.setItem('stepfun_api_key', step);
     else localStorage.removeItem('stepfun_api_key');
+    // 自定义供应商配置（issue #18）：四项全空即清除配置并回落官方通道
+    if (custom.baseUrl || custom.apiKey || custom.model || custom.name) {
+      try { localStorage.setItem('aigf_custom_llm', JSON.stringify(custom)); } catch (e) { /* 忽略 */ }
+    } else {
+      localStorage.removeItem('aigf_custom_llm');
+      localStorage.removeItem('aigf_use_custom_llm');
+    }
+    this.refreshCustomLlmUi();
     this._ttsCache && this._ttsCache.clear();   // Key 可能变化，朗读缓存作废
-    this.closeApiModal();
+    this.refreshThinkUi();
+    this.closeApiPanel();
     this.updateApiStatus();
     this.toast('API Key 已保存');
     // 首次配置 API 且尚无自建角色时，询问是否创建
@@ -3170,11 +3285,12 @@ ${favList || '（无）'}`,
     }
   },
   updateApiStatus() {
+    const customOn = this.useCustomLlm() && !!this.customLlmCfg().baseUrl;
     const hasKey = !!localStorage.getItem('deepseek_api_key');
     const t = this.el.apiStatusText;
-    if (t) t.textContent = hasKey ? 'API Key 已配置 ✓' : 'API Key 未配置';
+    if (t) t.textContent = customOn ? '自定义供应商已启用 ✓' : (hasKey ? 'API Key 已配置 ✓' : 'API Key 未配置');
     const row = document.getElementById('api-status-row');
-    if (row) row.style.color = hasKey ? 'var(--ok-color)' : '';
+    if (row) row.style.color = (customOn || hasKey) ? 'var(--ok-color)' : '';
   },
 
   // ═══ 创建角色（用户自建） ═══
@@ -3367,7 +3483,7 @@ ${favList || '（无）'}`,
     if (!localStorage.getItem('deepseek_api_key')) {
       this.closeCreateModal();
       this.toast('请先配置 DeepSeek API Key');
-      this.openApiModal();
+      this.openApiPanel();
       return;
     }
 
@@ -3555,7 +3671,7 @@ ${favList || '（无）'}`,
       [this.el.inputPlusMenu, () => this.closeInputPlusMenu()],
       [this.el.msgMenu, () => this.closeMsgMenu()],
       [this.el.memoryMenu, () => this.closeMemMenu()],
-      [this.el.apiModal, () => this.closeApiModal()],
+      [this.el.apiPanel, () => this.closeApiPanel()],
       [this.el.createOverlay, () => this.closeCreateModal()],
       [this.el.libraryOverlay, () => this.closeLibraryModal()],
       [this.el.wallOverlay, () => this.closeWallModal()],
@@ -4135,7 +4251,9 @@ ${favList || '（无）'}`,
 
     // API Key
     this.el.apiSaveBtn.addEventListener('click', () => this.handleApiKeySave());
-    this.el.apiSkipBtn.addEventListener('click', () => this.closeApiModal());
+    this.el.apiBackBtn.addEventListener('click', () => this.closeApiPanel());
+    this.el.customLlmToggle.addEventListener('click', () => this.toggleCustomLlm());
+    this.el.customLlmTest.addEventListener('click', () => this.testCustomLlm());
     // 开放平台跳转链接（issue #90）：裸 <a> 依赖 Capacitor 默认行为——
     // 主 WebView 导航到 allowNavigation 外的 https 域名自动转系统浏览器（模拟器实测 ✓）。
     // ⚠ 原生端勿拦勿加 target=_blank：AAR 无 onCreateWindow，_blank 事件会被丢弃；
@@ -4206,7 +4324,7 @@ ${favList || '（无）'}`,
       if (e.target === this.el.fontOverlay) this.closeFontModal();   // 同款守卫：点字体选项/按钮不误关
     });
     this.el.sbUpdate.addEventListener('click', () => { this.toggleSidebar(false); this.checkUpdate(); });
-    this.el.sbApi.addEventListener('click', () => { this.toggleSidebar(false); this.openApiModal(); });
+    this.el.sbApi.addEventListener('click', () => { this.toggleSidebar(false); this.openApiPanel(); });
     this.el.sbClear.addEventListener('click', () => { this.toggleSidebar(false); this.clearCurrentHistory(); });
 
     // 存档管理

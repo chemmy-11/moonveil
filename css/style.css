@@ -204,8 +204,8 @@ html[data-theme="custom"] .input-area {
 
 /* ─── 纯色主题去毛玻璃（issue #49 P0）：白/黑面板全实色，静态 blur 无意义，去掉省 GPU ───
    浮层（overlay/modal/lightbox/toast）保留 blur：半透明遮罩靠它维持层次 */
-html[data-theme="white"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, #img-preview-bar, .msg.system, .time-divider, .modal, #msg-menu, .profile-panel),
-html[data-theme="black"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, #img-preview-bar, .msg.system, .time-divider, .modal, #msg-menu, .profile-panel) {
+html[data-theme="white"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, #img-preview-bar, .msg.system, .time-divider, .modal, #msg-menu, .profile-panel, .api-panel),
+html[data-theme="black"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, #img-preview-bar, .msg.system, .time-divider, .modal, #msg-menu, .profile-panel, .api-panel) {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
@@ -1113,7 +1113,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 }
 .key-link:hover { text-decoration: underline; }
 .modal-desc { font-size: var(--text-base); color: var(--text-dim); margin: 10px 0 16px; line-height: var(--lh-loose); }
-.modal input[type="password"], .modal input[type="text"] {
+.modal input[type="password"], .modal input[type="text"], .api-panel input[type="text"] {
   width: 100%;
   border: 1px solid var(--card-border);
   border-radius: 12px;
@@ -1125,7 +1125,7 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   font-family: var(--font-sans);
   transition: border-color .2s, box-shadow .2s;
 }
-.modal input:focus {
+.modal input:focus, .api-panel input:focus {
   border-color: var(--gf-color);
   box-shadow: 0 0 0 3px var(--gf-color-soft);
 }
@@ -1449,6 +1449,83 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   to { opacity: 1; transform: none; }
 }
 .profile-panel::-webkit-scrollbar { width: 0; }
+
+/* ─── API 设置全屏面板（issue #18：卡片弹窗 → 全屏页面，分区卡组织） ─── */
+.api-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--card-bg);
+  backdrop-filter: blur(26px);
+  -webkit-backdrop-filter: blur(26px);
+  animation: ph-appear .24s var(--ease-out-soft);
+}
+.api-topbar {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px 8px;
+}
+.api-back {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: var(--bubble-gf);
+  color: var(--text-dim);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  transition: filter .15s, transform .12s;
+}
+.api-back:hover { filter: brightness(.97); }
+.api-back:active { transform: scale(.92); }
+.api-title { font-size: var(--text-lg); font-weight: var(--fw-semibold); letter-spacing: var(--ls-wide); }
+.api-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  width: min(640px, 100%);
+  margin: 0 auto;
+  padding: 4px 20px 24px;
+}
+.api-body::-webkit-scrollbar { width: 0; }   /* 与 profile-panel 一致的无滚动条语言 */
+.api-section {
+  background: var(--bubble-gf);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.api-section-title { font-size: var(--text-md); font-weight: var(--fw-semibold); margin-bottom: 10px; }
+.api-desc { font-size: var(--text-sm); color: var(--text-dim); margin: 0 0 12px; line-height: var(--lh-relaxed); }
+.api-custom-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--card-border);
+}
+.api-custom-label { font-size: var(--text-md); font-weight: var(--fw-medium, 500); }
+#custom-llm-form.off { opacity: .5; pointer-events: none; }
+.api-custom-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.api-hint { font-size: var(--text-xs, 12px); color: var(--text-dim); margin: 10px 0 0; line-height: var(--lh-relaxed); }
+.api-footer {
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px calc(14px + env(safe-area-inset-bottom, 0px));
+}
+.api-footer .btn { min-width: 140px; }
+/* 深度思考开关在自定义供应商下置灰（issue #18） */
+#think-pill.locked { opacity: .45; }
 
 .profile-close {
   position: absolute;

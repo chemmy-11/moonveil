@@ -165,21 +165,51 @@
 </div>
 
 <!-- ════ API Key 弹窗 ════ -->
-<div id="api-modal" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-title">配置 DeepSeek API Key</div>
-    <p class="modal-desc">对话由 DeepSeek 大模型实时生成。Key 只保存在你的浏览器本地，不会上传到任何服务器。</p>
-    <!-- type=text + text-security：Android 不触发安全键盘（方便粘贴 API Key），仍以圆点遮挡 -->
-    <label class="modal-field-label" for="api-key-input">DeepSeek API Key<a class="key-link" href="https://platform.deepseek.com/">去开放平台获取 ↗</a></label>
-    <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
-    <label class="modal-field-label" for="step-key-input">朗读 · 阶跃 StepFun Key（可选）</label>
-    <input type="text" id="step-key-input" placeholder="在 platform.stepfun.com 获取，用于她的朗读；音色在输入框「+」里换" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
-    <label class="modal-field-label" for="dashscope-key-input">语音转文字 · DashScope Key（可选）</label>
-    <input type="text" id="dashscope-key-input" placeholder="sk-...（百炼控制台获取），填写后可用语音发消息（转文字）" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
-    <div class="modal-buttons">
-      <button class="btn secondary" id="api-skip-btn">跳过</button>
-      <button class="btn primary" id="api-save-btn">保存</button>
-    </div>
+<!-- ════ API 设置全屏面板（issue #18：卡片弹窗 → 全屏页面，分区组织） ════ -->
+<div id="api-panel" class="api-panel hidden">
+  <div class="api-topbar">
+    <button class="api-back" id="api-back-btn" aria-label="返回">&#8592;</button>
+    <div class="api-title">API 设置</div>
+  </div>
+  <div class="api-body">
+    <section class="api-section">
+      <div class="api-section-title">对话模型</div>
+      <p class="api-desc">对话由大模型实时生成。Key 只保存在你的设备本地，不会上传到任何服务器。</p>
+      <!-- type=text + text-security：Android 不触发安全键盘（方便粘贴 API Key），仍以圆点遮挡 -->
+      <label class="modal-field-label" for="api-key-input">DeepSeek API Key<a class="key-link" href="https://platform.deepseek.com/">去开放平台获取 ↗</a></label>
+      <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+      <div class="api-custom-head">
+        <span class="api-custom-label">自定义供应商（OpenAI 兼容）</span>
+        <button class="lib-toggle" id="custom-llm-toggle" role="switch" aria-checked="false" aria-label="使用自定义供应商" tabindex="0"></button>
+      </div>
+      <div id="custom-llm-form">
+        <label class="api-field-label" for="custom-llm-name">备注名称（可选）</label>
+        <input type="text" id="custom-llm-name" placeholder="如：公司网关 / OpenRouter" autocomplete="off" spellcheck="false">
+        <label class="api-field-label" for="custom-llm-base">Base URL</label>
+        <input type="text" id="custom-llm-base" placeholder="https://api.xx.com 或 https://api.xx.com/v1" autocomplete="off" spellcheck="false">
+        <label class="api-field-label" for="custom-llm-key">API Key</label>
+        <input type="text" id="custom-llm-key" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+        <label class="api-field-label" for="custom-llm-model">Model ID</label>
+        <input type="text" id="custom-llm-model" placeholder="如 deepseek-chat / qwen-plus / gpt-4o-mini" autocomplete="off" spellcheck="false">
+        <div class="api-custom-actions">
+          <button class="btn secondary" id="custom-llm-test">测试连接</button>
+        </div>
+        <p class="api-hint">深度思考（thinking）为 DeepSeek 系扩展参数，自定义供应商下不发送，输入框的深度思考开关会置灰。</p>
+      </div>
+    </section>
+    <section class="api-section">
+      <div class="api-section-title">朗读</div>
+      <label class="modal-field-label" for="step-key-input">阶跃 StepFun Key（可选）</label>
+      <input type="text" id="step-key-input" placeholder="在 platform.stepfun.com 获取，用于她的朗读；音色在输入框「+」里换" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    </section>
+    <section class="api-section">
+      <div class="api-section-title">语音转文字</div>
+      <label class="modal-field-label" for="dashscope-key-input">DashScope Key（可选）</label>
+      <input type="text" id="dashscope-key-input" placeholder="sk-...（百炼控制台获取），填写后可用语音发消息（转文字）" autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
+    </section>
+  </div>
+  <div class="api-footer">
+    <button class="btn primary" id="api-save-btn">保存</button>
   </div>
 </div>
 

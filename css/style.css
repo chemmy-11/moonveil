@@ -1519,6 +1519,11 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  /* 断开滚动锚定回路（issue #94）：#85 collapse header 收缩 header 高度时，
+     Chrome 锚定会反向改写 scrollTop → scroll 事件 → --pc 再变 → 往复抖动。
+     overscroll-behavior: contain 顺带防顶/底链式滚动到 document 的二次抖动 */
+  overflow-anchor: none;
+  overscroll-behavior: contain;
   padding: 18px 22px 26px;
   display: flex;
   flex-direction: column;

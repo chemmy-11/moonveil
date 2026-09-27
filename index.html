@@ -48,8 +48,8 @@
           <div class="brand-sub">Moonveil · AI 陪伴实验场</div>
         </div>
       </div>
-      <div class="sidebar-section-title">我的女友</div>
-      <div id="gf-list"><!-- 由 js 渲染女友卡片 --></div>
+      <div class="sidebar-section-title">我的角色</div>
+      <div id="gf-list"><!-- 由 js 渲染已启用角色卡片（issue #7：仅启用的角色出现在聊天栏） --></div>
       <div class="sidebar-section-title">功能</div>
       <div class="sidebar-actions">
         <button class="sidebar-action" id="sb-backup"><span class="mi-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/></svg></span>存档管理</button>
@@ -179,6 +179,19 @@
     <div class="modal-buttons">
       <button class="btn secondary" id="api-skip-btn">跳过</button>
       <button class="btn primary" id="api-save-btn">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ 角色库弹窗（issue #7：启停内置/自建角色，停用不删数据） ════ -->
+<div id="library-overlay" class="modal-overlay hidden">
+  <div class="modal" id="library-modal">
+    <div class="modal-title">角色库</div>
+    <p class="modal-desc">聊天栏只显示已启用的角色。停用不会删除聊天记录与记忆，重新启用即恢复。</p>
+    <div id="library-list"><!-- 由 js 渲染：内置 / 自建两组 + 启停开关 --></div>
+    <div class="modal-buttons" id="library-buttons">
+      <button class="btn secondary" id="library-create-btn">＋ 创建自定义角色</button>
+      <button class="btn primary" id="library-close-btn">完成</button>
     </div>
   </div>
 </div>

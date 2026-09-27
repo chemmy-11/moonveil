@@ -46,6 +46,10 @@ const App = {
     { id: 'ruanmengnvsheng', name: '软萌女声', short: '软萌', desc: '轻柔娇软' },
   ],
 
+  // 角色库默认启用集（issue #7）：老用户升级 / 新用户首启时的聊天栏初始成员。
+  // 后续新增内置角色不进此集——入库待用户从角色库启用（「入库不自动出现」）。
+  DEFAULT_ENABLED_IDS: ['wanwan', 'tangtang', 'jiying'],
+
   state: {
     currentGf: null,
     histories: {},       // { gfId: [{role:'player'|'gf', text}] }
@@ -65,6 +69,7 @@ const App = {
     streamSkips: 0,      // 本次流中被跨女友守卫跳过上屏的气泡数
     extracting: false,   // 喜好提取调用进行中（防并发重复提取）
     customGfs: {},       // { gfId: {…角色定义} } 用户自建角色（localStorage 持久化）
+    enabledGfs: null,    // Set<gfId> 已启用角色（issue #7：聊天栏只显示启用的角色；null=未加载）
     corrections: {},     // { gfId: [{ts, text}] } 对话修正规则（Correction 闭环）
     createAvatar: '',    // 创建向导中选中的头像 dataURL（空=生成首字头像）
     createAvatarColor: '',  // 上传头像时提取的主色（作角色主题色）
@@ -76,6 +81,7 @@ const App = {
   init() {
     try { localStorage.removeItem('ebbingflow_endpoint'); } catch (e) { /* 忽略 */ }   // EbbingFlow 已移除（issue #33），清理残留配置
     try { this.loadCustomGfs(); } catch (e) { console.error('[init] loadCustomGfs', e); }
+    try { this.loadEnabledGfs(); } catch (e) { console.error('[init] loadEnabledGfs', e); }
     try { this.cacheElements(); } catch (e) { console.error('[init] cacheElements', e); }
     this._pinnedToBottom = true;   // 贴底跟踪初始态：对话区默认贴底（issue #4）
     try { this.applyTheme(); } catch (e) { console.error('[init] applyTheme', e); }
@@ -83,7 +89,7 @@ const App = {
     try { this.initWall(); } catch (e) { console.error('[init] initWall', e); }
     try { this.loadAllHistories(); } catch (e) { console.error('[init] loadAllHistories', e); }
     try { this.renderGfList(); } catch (e) { console.error('[init] renderGfList', e); }
-    try { this.switchGf(Object.keys(this.allGfs())[0], true); } catch (e) { console.error('[init] switchGf', e); }
+    try { this.switchGf(this.firstEnabledGfId(), true); } catch (e) { console.error('[init] switchGf', e); }
     try { this.bindEvents(); } catch (e) { console.error('[init] bindEvents', e); }
     try { this.checkApiKey(); } catch (e) { console.error('[init] checkApiKey', e); }
     try { this.setupKeyboardHook(); } catch (e) { console.error('[init] setupKeyboardHook', e); }
@@ -140,6 +146,10 @@ const App = {
       apiSkipBtn: document.getElementById('api-skip-btn'),
       createOverlay: document.getElementById('create-overlay'),
       createModal: document.getElementById('create-modal'),
+      libraryOverlay: document.getElementById('library-overlay'),
+      libraryList: document.getElementById('library-list'),
+      libraryCreateBtn: document.getElementById('library-create-btn'),
+      libraryCloseBtn: document.getElementById('library-close-btn'),
       createName: document.getElementById('create-name'),
       createDesc: document.getElementById('create-desc'),
       createMaterial: document.getElementById('create-material'),
@@ -1274,7 +1284,9 @@ const App = {
       this.saveCorrections(id, this.state.corrections[id]);
     }
     this.renderGfList();
-    if (!this.allGfs()[this.state.currentGf]) this.switchGf(Object.keys(this.allGfs())[0], true);
+    if (!this.allGfs()[this.state.currentGf] || !this.state.enabledGfs.has(this.state.currentGf)) {
+      this.switchGf(this.firstEnabledGfId(), true);   // 恢复的目标角色已不存在或已停用 → 回落首个启用角色
+    }
     else this.renderHistory();
   },
   renderSaveSlots() {
@@ -1475,6 +1487,66 @@ const App = {
       localStorage.setItem('aigf_custom_gfs', JSON.stringify(Object.values(this.state.customGfs)));
     } catch (e) { console.error('[saveCustomGfs]', e); }
   },
+  // ── 角色库（issue #7）：启用集持久化 + 启停 + 回落 ──
+  // 未初始化记录（老用户升级/新装首启）→ 默认集兜底（既有内置角色全启用，升级无损）。
+  // 停用不删任何数据：histories/favs/memories/corrections 按 gfId 存 localStorage，重新启用即恢复。
+  loadEnabledGfs() {
+    let ids = null;
+    try {
+      const raw = localStorage.getItem('aigf_gf_enabled');
+      if (raw) {
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr)) ids = arr.filter(x => typeof x === 'string');
+      }
+    } catch (e) { /* 解析失败回落默认 */ }
+    if (!ids) ids = this.DEFAULT_ENABLED_IDS.slice();   // 首启：默认集（新内置角色不自动出现）
+    this.state.enabledGfs = new Set(ids.filter(id => this.allGfs()[id]));
+    if (this.state.enabledGfs.size === 0) this.state.enabledGfs = new Set([Object.keys(this.allGfs())[0]]);
+    this.saveEnabledGfs();
+  },
+  saveEnabledGfs() {
+    try { localStorage.setItem('aigf_gf_enabled', JSON.stringify([...this.state.enabledGfs])); }
+    catch (e) { console.error('[saveEnabledGfs]', e); }
+  },
+  firstEnabledGfId() {
+    return Object.keys(this.allGfs()).find(id => this.state.enabledGfs.has(id)) || null;
+  },
+  // 启停切换：停用当前会话角色时自动回落到首个启用角色；至少保留一位启用
+  setGfEnabled(id, on) {
+    if (!this.allGfs()[id] || !this.state.enabledGfs) return false;
+    if (on) this.state.enabledGfs.add(id);
+    else {
+      if (this.state.enabledGfs.size <= 1) { this.toast('至少保留一位启用的角色'); return false; }
+      this.state.enabledGfs.delete(id);
+    }
+    this.saveEnabledGfs();
+    return true;
+  },
+  // 删除自建角色（与停用不同：连同本地数据一起清，二次确认）
+  removeCustomGf(id) {
+    const gf = this.state.customGfs[id];
+    if (!gf) return;
+    if (!confirm('删除角色「' + gf.name + '」？聊天记录与记忆将一并删除，不可恢复。')) return;
+    delete this.state.customGfs[id];
+    delete this.state.histories[id];
+    delete this.state.favs[id];
+    delete this.state.memories[id];
+    delete this.state.corrections[id];
+    try {
+      localStorage.removeItem(this.histKey(id));
+      localStorage.removeItem(this.favsKey(id));
+      localStorage.removeItem(this.memsKey(id));
+    } catch (e) { /* 忽略 */ }
+    this.saveCustomGfs();
+    if (this.state.enabledGfs.has(id)) { this.state.enabledGfs.delete(id); this.saveEnabledGfs(); }
+    if (this.state.currentGf === id) {
+      const fallback = this.firstEnabledGfId();
+      if (fallback) this.switchGf(fallback);
+    }
+    this.renderGfList();
+    this.renderLibraryList();
+    this.toast('已删除「' + gf.name + '」');
+  },
   nextId() {
     const n = this._idSeq = (this._idSeq || 0) + 1;
     return Date.now().toString(36) + '-' + n.toString(36);
@@ -1557,9 +1629,11 @@ const App = {
     catch (e) { console.error('[saveMemories]', e); }
   },
 
-  // ═══ 角色列表渲染（侧栏 + 底部导航） ═══
+  // ═══ 角色列表渲染（侧栏 + 底部导航；issue #7：仅已启用角色） ═══
   renderGfList() {
-    const listHtml = Object.values(this.allGfs()).map(gf => `
+    const listHtml = Object.values(this.allGfs())
+      .filter(gf => this.state.enabledGfs && this.state.enabledGfs.has(gf.id))
+      .map(gf => `
       <div class="gf-card" data-gf="${gf.id}">
         <img class="gf-card-avatar" src="${gf.avatar}" alt="">
         <div>
@@ -1568,14 +1642,44 @@ const App = {
         </div>
       </div>`).join('');
     this.el.gfList.innerHTML = listHtml + `
-      <div class="gf-card gf-card-add" id="gf-add-btn" role="button" tabindex="0">
-        <div class="gf-card-avatar avatar-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="gf-card gf-card-add" id="gf-library-btn" role="button" tabindex="0">
+        <div class="gf-card-avatar avatar-add"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M17.5 14.5v7M14 18h7"/></svg></div>
         <div>
-          <div class="gf-card-name">创建角色</div>
-          <div class="gf-card-tag">自定义一位专属角色</div>
+          <div class="gf-card-name">角色库</div>
+          <div class="gf-card-tag">启用 / 停用 · 创建新角色</div>
         </div>
       </div>`;
 
+  },
+
+  // ═══ 角色库弹层（issue #7：内置/自建两组 + 启停开关；停用不删数据） ═══
+  renderLibraryList() {
+    const all = this.allGfs();
+    const row = (gf, custom) => `
+      <div class="lib-row" data-lib-gf="${gf.id}">
+        <img class="lib-avatar" src="${gf.avatar}" alt="">
+        <div class="lib-info">
+          <div class="lib-name">${gf.name}${gf.mbti ? ' <span class="lib-mbti">' + gf.mbti + '</span>' : ''}</div>
+          <div class="lib-tag">${gf.tag || ''}</div>
+        </div>
+        ${custom ? '<button class="lib-del" data-lib-del="' + gf.id + '" title="删除角色" aria-label="删除角色">删除</button>' : ''}
+        <button class="lib-toggle${this.state.enabledGfs.has(gf.id) ? ' on' : ''}" data-lib-toggle="${gf.id}" role="switch"
+          aria-checked="${this.state.enabledGfs.has(gf.id)}" aria-label="启用 ${gf.name}" tabindex="0"></button>
+      </div>`;
+    const builtin = Object.values(all).filter(g => !g.id.startsWith('custom_')).map(g => row(g, false)).join('');
+    const customs = Object.values(all).filter(g => g.id.startsWith('custom_')).map(g => row(g, true)).join('');
+    this.el.libraryList.innerHTML = `
+      <div class="lib-group-title">内置角色</div>
+      ${builtin || '<div class="lib-empty">暂无</div>'}
+      <div class="lib-group-title">我的角色 · 自建</div>
+      ${customs || '<div class="lib-empty">还没有自建角色，点下方「创建自定义角色」试试</div>'}`;
+  },
+  openLibraryModal() {
+    this.renderLibraryList();
+    this.el.libraryOverlay.classList.remove('hidden');
+  },
+  closeLibraryModal() {
+    this.el.libraryOverlay.classList.add('hidden');
   },
 
   // ═══ 切换女友 ═══
@@ -3297,6 +3401,8 @@ ${favList || '（无）'}`,
 
       this.state.customGfs[id] = gf;
       this.saveCustomGfs();
+      this.state.enabledGfs.add(id);   // 自建角色创建即启用（issue #7：用户主动创建，直接进聊天栏）
+      this.saveEnabledGfs();
       this.closeCreateModal();
       this.renderGfList();
       this.switchGf(id);
@@ -3429,6 +3535,7 @@ ${favList || '（无）'}`,
       [this.el.memoryMenu, () => this.closeMemMenu()],
       [this.el.apiModal, () => this.closeApiModal()],
       [this.el.createOverlay, () => this.closeCreateModal()],
+      [this.el.libraryOverlay, () => this.closeLibraryModal()],
       [this.el.wallOverlay, () => this.closeWallModal()],
       [this.el.fontOverlay, () => this.closeFontModal()],
       [this.el.backupOverlay, () => this.closeBackup()],
@@ -3916,10 +4023,10 @@ ${favList || '（无）'}`,
     this.el.playerInput.addEventListener('compositionend', () => { this.state.isComposing = false; });
     this.el.playerInput.addEventListener('input', () => this.autoResizeInput());
 
-    // 角色切换（侧栏 + 底部导航）+ 创建角色入口
+    // 角色切换（侧栏 + 底部导航）+ 角色库入口（issue #7：原「创建角色」卡改为库面板，创建入口收进库内）
     document.addEventListener('click', (e) => {
-      const addBtn = e.target.closest('#gf-add-btn');
-      if (addBtn) { this.openCreateModal(); this.toggleSidebar(false); return; }
+      const libBtn = e.target.closest('#gf-library-btn');
+      if (libBtn) { this.openLibraryModal(); this.toggleSidebar(false); return; }
       // 消息右键菜单外部点击关闭
       if (!this.el.msgMenu.classList.contains('hidden') &&
           !this.el.msgMenu.contains(e.target)) {
@@ -3952,6 +4059,30 @@ ${favList || '（无）'}`,
       if (e.target === this.el.createOverlay) this.closeCreateModal();  // 仅点遮罩关闭，点弹窗内容不关
     });
     this.el.createSubmitBtn.addEventListener('click', () => this.createCharacter());
+    // 角色库（issue #7）：启停切换 / 删除自建 / 创建入口 / 完成关闭
+    this.el.libraryOverlay.addEventListener('click', (e) => {
+      if (e.target === this.el.libraryOverlay) { this.closeLibraryModal(); return; }   // 仅点遮罩关闭
+      const del = e.target.closest('[data-lib-del]');
+      if (del) { this.removeCustomGf(del.dataset.libDel); return; }
+      const tog = e.target.closest('[data-lib-toggle]');
+      if (tog) {
+        const id = tog.dataset.libToggle;
+        const on = !this.state.enabledGfs.has(id);
+        if (this.setGfEnabled(id, on)) {
+          if (!on && this.state.currentGf === id) {
+            const fallback = this.firstEnabledGfId();
+            if (fallback) this.switchGf(fallback, true);   // 停用当前会话角色：静默回落，无切换编排
+          }
+          this.renderGfList();
+          this.renderLibraryList();
+        }
+      }
+    });
+    this.el.libraryCreateBtn.addEventListener('click', () => {
+      this.closeLibraryModal();
+      this.openCreateModal();
+    });
+    this.el.libraryCloseBtn.addEventListener('click', () => this.closeLibraryModal());
     // 头像选择：emoji 点击选中 / 上传按钮
     this.el.avatarPicker.addEventListener('click', (e) => {
       const opt = e.target.closest('.avatar-option');

@@ -2052,6 +2052,8 @@ const App = {
     const nearBottom = area.scrollHeight - area.scrollTop - area.clientHeight < 80;
     this._pinnedToBottom = nearBottom;   // 贴底跟踪：键盘重锚定（issue #4）与按钮共用同一阈值
     this.el.scrollBottomBtn.classList.toggle('show', !nearBottom);
+    // 滚动边界渐隐（issue #100）：距底超过阈值才启用底部渐隐带——贴底时最新消息不能被削淡
+    this.el.dialogueArea.classList.toggle('edge-fade', !nearBottom);
   },
 
   // ═══ 打字指示器 ═══
@@ -3964,6 +3966,7 @@ ${favList || '（无）'}`,
     // 近顶部时兜底触发历史懒加载（issue #26：IO 在后台 WebView 可能被节流，scroll 事件永远可靠）
     this.el.dialogueArea.addEventListener('scroll', () => {
       this.toggleScrollBottomBtn();
+      this.updateEdgeFade();
       if (this.el.dialogueArea.scrollTop < 60) this.loadOlderBatch();
     }, { passive: true });
     this.el.scrollBottomBtn.addEventListener('click', () => {

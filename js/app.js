@@ -790,9 +790,9 @@ const App = {
   },
   // 女友气泡朗读：合成（按 音色+mid+文本 内存缓存）→ 播放
   // 语音气泡段合成（issue #13）：key 含段序——同段重进/点播直接命中缓存
-  async gfVoiceBuf(mid, si, speak) {
+  async gfVoiceBuf(mid, speak) {
     if (!this._ttsCache) this._ttsCache = new Map();
-    const key = this.ttsVoice() + ':' + mid + ':' + si + ':' + speak;
+    const key = this.ttsVoice() + ':' + mid + ':' + speak;
     let buf = this._ttsCache.get(key);
     if (!buf) {
       buf = await this.synthesizeGfVoice(speak);
@@ -801,10 +801,10 @@ const App = {
     return buf;
   },
   // 语音气泡点播：无缓存则静默重合成（合成只依赖文本+情绪指令，可复现）
-  async playGfVoice(mid, si, speak, el) {
+  async playGfVoice(mid, speak, el) {
     el.classList.add('loading');
     try {
-      const buf = await this.gfVoiceBuf(mid, si, speak);
+      const buf = await this.gfVoiceBuf(mid, speak);
       const durEl = el.querySelector('.mv-dur');
       if (durEl) durEl.textContent = Math.max(1, Math.round(buf.duration)) + '″';
       this.playAudioBuffer(buf, el, this._mediaCtx());
@@ -815,12 +815,12 @@ const App = {
     }
   },
   // gf 语音气泡构建（issue #13）：复用玩家侧 mic 形态；动作描写存在时给「原文」chip 展开看全文
-  appendGfVoiceBubble(bubble, mid, si, speak, raw) {
+  appendGfVoiceBubble(bubble, mid, speak, raw) {
     const est = Math.max(1, Math.round(speak.length / 4));
     const voice = document.createElement('div');
     voice.className = 'msg-voice';
     voice.title = '点击播放';
-    voice.addEventListener('click', () => this.playGfVoice(mid, si, speak, voice));
+    voice.addEventListener('click', () => this.playGfVoice(mid, speak, voice));
     const bars = document.createElement('span');
     bars.className = 'mv-bars';
     bars.innerHTML = '<i></i><i></i><i></i><i></i>';
@@ -1936,12 +1936,13 @@ const App = {
         // 内心独白（💭 ta的独白）：整组回复渲染一次，置于首条气泡上方
         if (m.inner) this.appendReasoningBlock(m.id, m.inner, frag);   // 💭 ta的独白（issue #12：只渲染 <inner> 协议字段；旧 reasoning=思维链不再展示，数据保留）
         // 同一次回复的多个气泡（\n 分隔）拆成多条渲染
-        const vf = m.vmode ? (m.vflags || []) : null;
-        for (let si = 0; si < this.segsOf(m).length; si++) {
-          const seg = this.segsOf(m)[si];
-          if (!seg.trim()) continue;
-          const voice = vf && vf[si] ? { speak: this.stripActionText(seg) || seg, idx: si } : null;
-          this.appendMessage('gf', seg, true, null, m.id, null, frag, voice);
+        // 语音气泡模式（issue #13）：整条回复 = 一整段语音气泡（动作描写剥离，带情绪演绎）
+        if (m.vmode) {
+          this.appendMessage('gf', m.text, true, null, m.id, null, frag, { speak: this.stripActionText(m.text) || m.text, idx: 0 });
+        } else {
+          for (const seg of this.segsOf(m)) {
+            if (seg.trim()) this.appendMessage('gf', seg, true, null, m.id, null, frag);
+          }
         }
       } else {
         this.appendMessage(m.role, m.text, true, null, m.id, {
@@ -2197,8 +2198,7 @@ const App = {
     }
     // gf 语音气泡（issue #13）：语音气泡模式的历史/变形渲染路径
     if (role === 'gf' && voice && voice.speak) {
-      wrap.dataset.seg = voice.idx;   // 自动合成的定位锚（synthVoiceReply 按段查询）
-      this.appendGfVoiceBubble(bubble, mid, voice.idx, voice.speak, text);
+      this.appendGfVoiceBubble(bubble, mid, voice.speak, text);
       wrap.appendChild(bubble);
       this.attachMsgOps(wrap, area, noScroll);
       return;
@@ -2528,10 +2528,7 @@ const App = {
       item = { role: 'gf', text: clean.join('\n'), ts: Date.now(), id: mid || this.nextId() };
       if (inner && inner.trim()) item.inner = inner.trim();   // 💭 ta的独白（issue #12：<inner> 协议解析结果，无独白不存字段）
       // 语音气泡模式（issue #13）：定稿标记每段可朗读性（stripActionText 剥后非空），随后 DOM 变形 + 逐条自动合成
-      if (this.voiceReplyOn() && this.hasStepKey()) {
-        item.vmode = true;
-        item.vflags = clean.map(b => (this.stripActionText(b) ? 1 : 0));
-      }
+      if (this.voiceReplyOn() && this.hasStepKey()) item.vmode = true;
       this.state.histories[gfId].push(item);
       this.saveHistory(gfId);
     }
@@ -2540,6 +2537,9 @@ const App = {
 
   // 语音气泡变形（issue #13）：移除该回复已上屏的文字气泡，按 vflags 重渲染（可朗读段 = 语音气泡，
   // 纯动作段保留文字），并逐条自动合成——串行防限流；单条失败该段降级回文字，绝不丢消息
+  // 整段语音变形（issue #13 owner 定调）：整条回复 = 一整段语音气泡——
+  // 动作描写（…）/*…*/〔…〕先剥离只读自然对话；合成带情绪演绎（ttsEmotionInstruction 按内容逐条生成，句句不同）。
+  // 合成失败 → 气泡还原为文字（消息绝不丢）。
   morphReplyToVoice(gfId, mid) {
     const area = this.el.dialogueArea;
     const hist = this.state.histories[gfId] || [];
@@ -2548,51 +2548,40 @@ const App = {
     area.querySelectorAll(`.msg.gf[data-mid="${mid}"]`).forEach(el => {
       if (!el.querySelector('.reasoning-row')) el.remove();   // 💭 独白块保留
     });
+    const speak = this.stripActionText(item.text) || item.text;   // 整条纯动作 → 回落原文，绝不合成空白音频
+    // 仍在队列里未上屏的文字段直接丢弃——整段语音气泡已覆盖全部内容，避免文字/语音重复显示
+    this.state.bubbleQueue = this.state.bubbleQueue.filter(q => q.mid !== mid);
     const frag = document.createDocumentFragment();
-    this.segsOf(item).forEach((seg, si) => {
-      if (!seg.trim()) return;
-      const vf = (item.vflags || [])[si] ? { speak: this.stripActionText(seg) || seg, idx: si } : null;
-      this.appendMessage('gf', seg, false, gfId, mid, null, frag, vf);
-    });
+    this.appendMessage('gf', item.text, false, gfId, mid, null, frag, { speak, idx: 0 });
     area.appendChild(frag);
     if (this._pinnedToBottom) this.scrollToBottom(false);
-    this.synthVoiceReply(gfId, mid);
+    this.synthVoiceReply(gfId, mid, speak, item.text);
   },
-  // 逐条合成（串行防限流）：完成后回填真实时长；单条失败该段还原文字
-  async synthVoiceReply(gfId, mid) {
-    const hist = this.state.histories[gfId] || [];
-    const item = [...hist].reverse().find(h => h.id === mid);
-    if (!item || !item.vmode) return;
-    const segs = this.segsOf(item);
-    for (let si = 0; si < segs.length; si++) {
-      if (!(item.vflags || [])[si]) continue;
-      const el = this.el.dialogueArea.querySelector(`.msg.gf[data-mid="${mid}"][data-seg="${si}"] .msg-voice`);
-      if (!el) continue;
-      el.classList.add('loading');
-      try {
-        const buf = await this.gfVoiceBuf(mid, si, this.stripActionText(segs[si]) || segs[si]);
-        el.dataset.synth = '1';   // 实测标记：真实合成已完成
-        const durEl = el.querySelector('.mv-dur');
-        if (durEl) durEl.textContent = Math.max(1, Math.round(buf.duration)) + '″';
-      } catch (e) {
-        console.error('[synthVoiceReply]', e);
-        this.degradeVoiceSeg(mid, si, segs[si]);
-      } finally {
-        el.classList.remove('loading');
-      }
+  // 整段自动合成：成功回填真实时长并点亮可播；失败还原文字
+  async synthVoiceReply(gfId, mid, speak, raw) {
+    const el = this.el.dialogueArea.querySelector(`.msg.gf[data-mid="${mid}"] .msg-voice`);
+    if (!el) return;
+    el.classList.add('loading');
+    try {
+      const buf = await this.gfVoiceBuf(mid, speak);
+      el.dataset.synth = '1';
+      const durEl = el.querySelector('.mv-dur');
+      if (durEl) durEl.textContent = Math.max(1, Math.round(buf.duration)) + '″';
+    } catch (e) {
+      console.error('[synthVoiceReply]', e);
+      this.degradeVoiceToText(mid, raw);
+    } finally {
+      el.classList.remove('loading');
     }
   },
-  // 单段合成失败 → 该段气泡还原为文字（消息绝不丢）
-  degradeVoiceSeg(mid, si, seg) {
-    const wrap = this.el.dialogueArea.querySelector(`.msg.gf[data-mid="${mid}"][data-seg="${si}"]`);
+  // 合成失败 → 气泡还原为文字（原文含动作描写一并可见）
+  degradeVoiceToText(mid, raw) {
+    const wrap = this.el.dialogueArea.querySelector(`.msg.gf[data-mid="${mid}"]`);
     if (!wrap) return;
     const bubble = wrap.querySelector('.msg-text');
     if (!bubble) return;
-    const v = bubble.querySelector('.msg-voice');
-    if (v) v.remove();
-    const tr = bubble.querySelectorAll('.mv-transcript-toggle, .mv-transcript');
-    tr.forEach(el => el.remove());
-    bubble.appendChild(document.createTextNode(seg));
+    bubble.querySelectorAll('.msg-voice, .mv-transcript-toggle, .mv-transcript').forEach(el => el.remove());
+    bubble.appendChild(document.createTextNode(raw));
   },
 
   // ═══ 语音气泡模式（issue #13）═══

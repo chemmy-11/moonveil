@@ -1978,12 +1978,12 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 /* 立绘上保文字可读：header 雾化层（按主题明暗自适应）；
    body 不再大面积雾化——立绘全幅可见，分区卡片自行承担可读性（见 gf 主题卡片规则） */
 .profile-panel.has-hero .profile-header {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 66%, transparent), color-mix(in srgb, var(--bg) 84%, transparent));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 53%, transparent), color-mix(in srgb, var(--bg) 67%, transparent));
 }
 /* 角色专属主题：分区卡片化——半透明浅底（无磨砂）+ 自然圆角，立绘透出不被遮挡（issue #6 跟进/owner 反馈）。
    透明度基准：比 header 雾化层（66% bg）略透明，取 56%；磨砂 blur 会把立绘糊掉，弃用 */
 html[data-theme="gf"] .profile-section {
-  background: color-mix(in srgb, var(--bg) 56%, transparent);
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
   border: 1px solid var(--card-border);
   border-radius: 18px;
   padding: 14px 16px;

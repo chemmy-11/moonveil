@@ -2059,6 +2059,9 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 .msg-tts-btn:hover { color: var(--gf-color); }
 .msg-tts-btn.loading { animation: tts-breath 1.2s ease-in-out infinite; }
 .msg-tts-btn.playing { color: var(--gf-color); }
+/* gf 语音气泡（issue #13）：合成中呼吸态 */
+.msg-voice.loading { animation: tts-breath 1.2s ease-in-out infinite; }
+.msg-voice:not(.playing):hover { opacity: .85; }
 @keyframes tts-breath {
   0%, 100% { opacity: .45; }
   50% { opacity: 1; }

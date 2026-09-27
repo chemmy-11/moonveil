@@ -413,6 +413,15 @@ body.keyboard-open .main-layout {
   overflow-y: auto;
   padding: 16px 16px 12px;
   scroll-behavior: smooth;
+  /* 滚动边界渐隐（issue #100）：mask 真 alpha 渐隐，壁纸/主题自动自适应。
+     顶部常开（历史滚出柔和）；底部仅距底 > 80px 时挂 .edge-fade——贴底时最新消息不能被削淡。
+     改 mask 不改布局，无 overflow-anchor 类抖动回路 */
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), #000 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), #000 100%);
+}
+#dialogue-area.edge-fade {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 24px, #000 calc(100% - 24px), transparent 100%);
 }
 #dialogue-area::-webkit-scrollbar { width: 4px; }
 #dialogue-area::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 2px; }

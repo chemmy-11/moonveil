@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">月见 Public</string>
-    <string name="title_activity_main">月见 Public</string>
+    <string name="app_name">月见Moonveil</string>
+    <string name="title_activity_main">月见Moonveil</string>
     <string name="package_name">com.aigf.app.public</string>
     <string name="custom_url_scheme">com.aigf.app.public</string>
 </resources>

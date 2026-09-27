@@ -85,6 +85,6 @@
 
 - 版本三处同步一条命令：`bash scripts/bump-version.sh [版本号]`（js/version.js 唯一源头 → build.sh 注入 index.html 缓存号 → build.gradle versionName/versionCode，issue #25；不带参数则 patch +1）
 - 版本线说明：2026-09 重开为 `0.x.y` 线（旧 1.x 线止于 v1.8.1 / versionCode 181）；versionCode 规则 v2（2026-09-26 起）`(major+1)×10000 + minor×100 + patch`（0.3.0 ↔ 10300），必须严格递增——旧式 `minor×10+patch` 在 patch≥10 时进位污染 minor 位（0.2.13 ↔ 1033，0.3.0 反算 1030 倒退），故升位——OTA 检查更新依赖它递增，重开版本线时**必须核对 versionCode 高于旧线**（bump 脚本已内置该校验）
-- 发版后同步 `chemmy-11/moonveil-updates` 仓库（APK + latest.json）供 App 检查更新
+- 发版后同步 `chemmy-11/moonveil-updates-public` 仓库（APK + latest.json）供 App 检查更新；GitHub Release 标题格式 = `vX.Y.Z`，不带「公开发布」等后缀（issue #5）
 - 提交信息遵循 `<动词>: <改了什么>`；改 personas 需同步 `js/data.js`
 - Issue / PR 提报规范（仓库基线、标题与正文模板、合并前自查清单、隐私红线）见 `docs/issue-pr-conventions.md`

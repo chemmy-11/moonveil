@@ -43,11 +43,11 @@
 - `chemmy-11/moonveil-updates`：日常发版源（开发主线构建，本仓不同步）。
 - `chemmy-11/moonveil-updates-public`：公开版更新源——公开快照构建的脱敏 APK + latest.json。
 - **本仓 `js/app.js` 的更新源 URL 固定指向 `moonveil-updates-public`**（`RAW_URL` / `API_URL` 两处 + 注释）。这是公开仓与开发主线唯一登记在案的代码差异：整树覆盖同步时**必须重新应用本改写**（已纳入第三节第 3 步 checklist）。
-- 公开版发版纪律与主线一致：APK 文件名带版本号（`AI-GF-<版本>.apk`）、latest.json 的 `apk_url` 指向带版本文件名、更新仓只保留当前版 + latest.json、更新前解包复查内容边界（第二节）。
+- 公开版发版纪律与主线一致：APK 文件名带版本号（`AI-GF-<版本>.apk`）、latest.json 的 `apk_url` 指向带版本文件名、更新仓只保留当前版 + latest.json、更新前解包复查内容边界（第二节）。**GitHub Release 标题格式 = `vX.Y.Z`，不带「公开发布」等后缀（issue #5，存量标题已 PATCH）**。
 
 ## 五、应用身份与签名（公开版独立）
 
 - **包名**：`com.aigf.app.public`（开发主线版为 `com.aigf.app`）——两版可在同一设备并存，互不覆盖。
-- **应用名**：`月见 Public`（桌面图标标签，便于与开发版区分）。
+- **应用名**：`月见Moonveil`（桌面图标标签 / 系统设置 / 关于页显示名，issue #5；开发版显示名「月见」，并存仍可区分）。
 - **签名**：`android/app/moonveil-public.jks` 随仓发布（storePassword/keyPassword 均为 `moonveil-public`，alias `moonveil-public`），debug 与 release 构建统一使用（gradle `signingConfigs.pubEdition`）。密钥仅绑定公开包名、随开源仓公开是既定决策，不含敏感意义；换来的是 CI 构建间签名一致——OTA 覆盖安装不再依赖构建机临时 debug key。
 - **整树覆盖同步后必查**：第三节 checklist 的「应用身份改写」三处 + 本节签名配置与 keystore 文件存在性。

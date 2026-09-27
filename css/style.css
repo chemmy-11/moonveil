@@ -995,7 +995,7 @@ body.waiting #typing-indicator .msg-avatar {
 #scroll-bottom-btn svg { width: var(--icon-md); height: var(--icon-md); }
 
 #player-input {
-  flex: 1;
+  flex: 1 1 auto;
   resize: none;
   border: 1px solid var(--card-border);
   border-radius: 18px;
@@ -1005,7 +1005,6 @@ body.waiting #typing-indicator .msg-avatar {
   font-family: var(--font-sans);
   color: var(--text-main);
   outline: none;
-  max-height: 120px;
   line-height: var(--lh-normal);
   box-shadow: var(--shadow-tiny);
   transition: border-color .2s, box-shadow .2s;

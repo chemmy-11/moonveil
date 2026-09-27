@@ -1648,8 +1648,36 @@ const App = {
   // 其它主题（纯白/纯黑/自定义）完全不受角色包影响。
   applyGfWall() {
     if (document.documentElement.getAttribute('data-theme') !== 'gf') return;
-    const pack = this.VISUAL_PACKS[this.state.currentGf];
+    const pack = this.getVisualPack(this.state.currentGf);
     this.applyWallInline(pack && pack.chatWall ? pack.chatWall : null);
+  },
+
+  // ═══ 视觉包通用注册表（issue #99 阶段一）═══
+  // 内置角色走静态 map；自建角色读自身 visual 字段（{hero, chatWall}，assets/ 相对路径），
+  // 随 customGfs 一同持久化与存档导出。设置入口：App.setCustomVisual(id, hero, chatWall)。
+  getVisualPack(gfId) {
+    if (this.VISUAL_PACKS[gfId]) return this.VISUAL_PACKS[gfId];
+    const cg = this.state.customGfs[gfId];
+    if (cg && cg.visual && (cg.visual.hero || cg.visual.chatWall)) return cg.visual;
+    return null;
+  },
+  // 设置/清除自建角色的专属视觉包（内置 id 忽略——静态包不可覆盖）
+  setCustomVisual(id, hero, chatWall) {
+    const cg = this.state.customGfs[id];
+    if (!cg) { this.toast('只有自建角色可以挂载视觉包'); return; }
+    if (this.VISUAL_PACKS[id]) { this.toast('内置角色的视觉包不可覆盖'); return; }
+    const heroOk = typeof hero === 'string' && hero.trim();
+    const wallOk = typeof chatWall === 'string' && chatWall.trim();
+    if (!heroOk && !wallOk) { delete cg.visual; }
+    else {
+      cg.visual = {
+        ...(heroOk ? { hero: hero.trim() } : {}),
+        ...(wallOk ? { chatWall: chatWall.trim() } : {}),
+      };
+    }
+    this.saveCustomGfs();
+    this.applyGfWall();
+    this.toast(heroOk || wallOk ? '专属视觉已更新' : '专属视觉已清除');
   },
 
   // ═══ 未读刷新（底栏已移除；unread 计数保留，切回该女友时清零） ═══
@@ -3372,7 +3400,8 @@ ${favList || '（无）'}`,
     if (!gf || !gf.profile) return;
     const p = gf.profile;
     // 角色立绘背景（issue #69 改造）：仅在「角色专属」主题下，有视觉包的角色显示立绘
-    const pack = this.VISUAL_PACKS[this.state.currentGf];
+    // issue #99 阶段一：门控走通用注册表，自建角色的 visual 字段同样生效
+    const pack = this.getVisualPack(this.state.currentGf);
     const showHero = document.documentElement.getAttribute('data-theme') === 'gf' && !!(pack && pack.hero);
     this.el.profilePanel.classList.toggle('has-hero', showHero);
     this.el.profilePanel.style.backgroundImage = showHero ? `url("${pack.hero}")` : '';

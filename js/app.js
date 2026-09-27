@@ -1259,6 +1259,7 @@ const App = {
       memories: this.state.memories,
       corrections: this.state.corrections,
       customGfs: this.state.customGfs,
+      enabledGfs: [...this.state.enabledGfs],   // 角色库启用集随档迁移（issue #7：旧档无此字段保持本机现状）
     };
   },
   restoreData(data) {
@@ -1273,6 +1274,12 @@ const App = {
       if (cg[id] && cg[id].name && cg[id].prompt) this.state.customGfs[id] = cg[id];
     }
     this.saveCustomGfs();
+    // 角色库启用集（issue #7）：随档恢复；旧档无此字段时保持本机现状不覆盖
+    if (Array.isArray(data.enabledGfs)) {
+      this.state.enabledGfs = new Set(data.enabledGfs.filter(id => this.allGfs()[id]));
+      if (this.state.enabledGfs.size === 0) this.state.enabledGfs = new Set([Object.keys(this.allGfs())[0]]);
+      this.saveEnabledGfs();
+    }
     for (const id of Object.keys(this.allGfs())) {
       this.state.histories[id] = Array.isArray(data.histories[id]) ? data.histories[id] : [];
       this.state.favs[id] = Array.isArray(data.favs && data.favs[id]) ? data.favs[id] : [];

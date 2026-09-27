@@ -4456,7 +4456,6 @@ ${favList || '（无）'}`,
     // 近顶部时兜底触发历史懒加载（issue #26：IO 在后台 WebView 可能被节流，scroll 事件永远可靠）
     this.el.dialogueArea.addEventListener('scroll', () => {
       this.toggleScrollBottomBtn();
-      this.updateEdgeFade();
       if (this.el.dialogueArea.scrollTop < 60) this.loadOlderBatch();
     }, { passive: true });
     this.el.scrollBottomBtn.addEventListener('click', () => {

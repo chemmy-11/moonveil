@@ -2749,12 +2749,11 @@ ${favList || '（无）'}`,
     const sendNext = () => {
       this.state.queueTimer = null;
       const item = this.state.bubbleQueue.shift();
-      if (item) {
-        // 上屏前剥离【喜好】标记（用户不可见），剥空则跳过该气泡
-        const clean = this.stripFavTags(item.gfId, item.text);
-        if (clean) this.appendMessage('gf', clean, false, item.gfId, item.mid);
-        if (item.sound) this.playSound();
-      }
+      // clean 必须在 sendNext 作用域（勿放 if(item) 块内）：下方积压调度要拿它算间隔——
+      // 块内声明曾致 ReferenceError 杀死定时链，队列积压时第二条起永不显示（issue #91 回归）
+      const clean = item ? this.stripFavTags(item.gfId, item.text) : '';
+      if (clean) this.appendMessage('gf', clean, false, item.gfId, item.mid);
+      if (item && item.sound) this.playSound();
       if (this.state.bubbleQueue.length > 0) {
         // 间隔拟人化（issue #78）：基础 + 上一条字数加权 + 随机抖动
         this.state.queueTimer = setTimeout(sendNext, this.nextMsgGap(clean));

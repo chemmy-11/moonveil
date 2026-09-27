@@ -1753,7 +1753,7 @@ const App = {
       if (ts) lastTs = ts;
       if (m.role === 'gf') {
         // 内心独白（💭 ta的独白）：整组回复渲染一次，置于首条气泡上方
-        if (m.reasoning) this.appendReasoningBlock(m.id, m.reasoning, frag);
+        if (m.inner) this.appendReasoningBlock(m.id, m.inner, frag);   // 💭 ta的独白（issue #12：只渲染 <inner> 协议字段；旧 reasoning=思维链不再展示，数据保留）
         // 同一次回复的多个气泡（\n 分隔）拆成多条渲染
         for (const seg of this.segsOf(m)) {
           if (seg.trim()) this.appendMessage('gf', seg, true, null, m.id, null, frag);
@@ -2144,7 +2144,56 @@ const App = {
     let curSentence = '';     // 当前句子缓冲
     let cutPos = -1;          // 缓冲中的可切分位置（最后一个强标点之后）
     let gotContent = false;
-    let liveReasoning = null; // 实时独白块：思考阶段构建（收起+动效，文字不展开），流结束定稿
+    let liveReasoning = null; // 实时独白块：独白闭合即定稿（正文随后逐条上屏），流结束兜底收尾
+    // ═══ 内心独白拦截（issue #12）═══
+    // 独白随正文 content 流输出（<inner>…</inner> 定界），不再消费模型 reasoning_content 思维链。
+    // 状态机防「<inner>」被拆在多个 delta 里；模型漏写定界符 → 缓冲全文回灌正文，该条无独白（优雅降级）。
+    const OPEN = '<inner>', CLOSE = '</inner>';
+    const gate = { state: 'wait', buf: '' };   // wait=开头判定中；in=独白正文累积中；done=直通
+    this._lastInner = '';
+    const onInnerClosed = (raw) => {
+      const text = raw.trim();
+      if (!text) return;
+      this._lastInner = text;
+      if (this.state.typingActive) this.removeTyping();   // 独白动效接管「正在回复」
+      if (!liveReasoning) liveReasoning = this.createLiveReasoning(replyId);
+      this.finalizeLiveReasoning(liveReasoning, text);   // 独白先行定稿，正文随后逐条上屏
+    };
+    const gateChunk = (chunk) => {
+      if (gate.state === 'done') return chunk;
+      if (gate.state === 'wait') {
+        gate.buf += chunk;
+        const probe = gate.buf.replace(/^\s+/, '');   // 容忍前导空白
+        if (!probe) return '';
+        if (OPEN.startsWith(probe) && probe.length < OPEN.length) return '';   // 仍是 <inner 前缀，等下一片
+        if (probe.startsWith(OPEN)) {
+          gate.state = 'in';
+          gate.buf = '';
+          const rest = probe.slice(OPEN.length);
+          return rest ? gateChunk(rest) : '';
+        }
+        gate.state = 'done';   // 不是独白开头：全文回灌正文管线
+        const out = gate.buf; gate.buf = '';
+        return out;
+      }
+      gate.buf += chunk;
+      const idx = gate.buf.indexOf(CLOSE);
+      if (idx < 0) return '';
+      const inner = gate.buf.slice(0, idx);
+      const tail = gate.buf.slice(idx + CLOSE.length);
+      gate.state = 'done'; gate.buf = '';
+      onInnerClosed(inner);
+      return tail;
+    };
+    const gateFlush = () => {   // 流结束收尾：未闭合的独白段尽力保留，wait 残留必是半截标记、丢弃
+      if (gate.state === 'in') {
+        const rest = gate.buf;
+        gate.state = 'done'; gate.buf = '';
+        onInnerClosed(rest);
+        return;
+      }
+      gate.state = 'done'; gate.buf = '';
+    };
     const flushAt = (len) => {
       const seg = (len > 0 ? curSentence.slice(0, len) : curSentence).trim();
       if (len > 0) curSentence = curSentence.slice(len);
@@ -2185,7 +2234,9 @@ const App = {
       await this.callLLM(gf.prompt, gfId, llmMessage, (delta) => {
         gotContent = true;
         if (this.state.typingActive) this.removeTyping();  // 首个 token 到达 → 移除打字指示器
-        for (const ch of delta) {
+        const chunk = gateChunk(delta);   // issue #12：正文流里的 <inner> 段先过独白闸门
+        if (!chunk) return;
+        for (const ch of chunk) {
           curSentence += ch;
           if (ch === '\n') { flushAt(0); cutPos = -1; continue; }
           const isPunct = /[。！？!?]/.test(ch);
@@ -2200,12 +2251,8 @@ const App = {
             else flushAt(0);
           }
         }
-      }, () => {
-        // 思考增量：独白动效接管「正在回复」的表达，思考文字保持收起不滚出
-        if (this.state.typingActive) this.removeTyping();
-        if (!liveReasoning) liveReasoning = this.createLiveReasoning(replyId);
       }, img);
-      const reasoning = this._lastReasoning || '';
+      gateFlush();   // 流结束：未闭合独白尽力收尾（wait 残留=半截标记，已丢弃）
       // 流结束：剩余缓冲提交
       if (curSentence.trim()) flushAt(0);
       if (!gotContent || bubbles.length === 0) {
@@ -2213,11 +2260,10 @@ const App = {
         bubbles.push(fallback);
         this.queueBubble(gfId, fallback, false, replyId);
       }
-      this.finalizeLiveReasoning(liveReasoning, reasoning);   // 独白定稿：动效停止，全文淡入
-      liveReasoning = null;
+      liveReasoning = null;   // 独白已在闭合时即时定稿（onInnerClosed）；无独白则从未建壳
       // 同一次回复的多个气泡合并为一条历史消息（\n 分隔），渲染时拆条
       // （commitReply 内会剥离【喜好】标记并入库）
-      this.commitReply(gfId, bubbles, replyId, reasoning);
+      this.commitReply(gfId, bubbles, replyId, this._lastInner);
       this.settleStream(gfId);
       // 记忆提取（均后台静默）：喜好每轮小调用；回忆按周期/信号词盘点
       this.extractFavs(gfId);
@@ -2233,11 +2279,10 @@ const App = {
         liveReasoning = null;
         return;
       }
-      // 断流：已收到的内容保留上屏（入队）
+      // 断流：已收到的内容保留上屏（入队）；已闭合独白自然保留，未闭合段尽力收尾
+      gateFlush();
       if (curSentence.trim()) flushAt(0);
-      this.finalizeLiveReasoning(liveReasoning, this._lastReasoning || '');
-      liveReasoning = null;
-      this.commitReply(gfId, bubbles, replyId, this._lastReasoning || '');
+      this.commitReply(gfId, bubbles, replyId, this._lastInner);
       this.removeTyping();
       this.settleStream(gfId);
       console.error('[sendMessage]', e, e.body || '');
@@ -2281,13 +2326,13 @@ const App = {
   },
 
   // ═══ 提交回复：剥离喜好标记 → 存历史 ═══
-  commitReply(gfId, bubbles, mid, reasoning) {
+  commitReply(gfId, bubbles, mid, inner) {
     const clean = bubbles
       .map(b => this.stripFavTags(gfId, b))
       .filter(b => b.trim());
     if (clean.length) {
       const item = { role: 'gf', text: clean.join('\n'), ts: Date.now(), id: mid || this.nextId() };
-      if (reasoning && reasoning.trim()) item.reasoning = reasoning.trim();   // 💭 ta的独白（直接展开展示）
+      if (inner && inner.trim()) item.inner = inner.trim();   // 💭 ta的独白（issue #12：<inner> 协议解析结果，无独白不存字段）
       this.state.histories[gfId].push(item);
       this.saveHistory(gfId);
     }
@@ -2824,7 +2869,7 @@ ${favList || '（无）'}`,
   // ═══ LLM 调用（DeepSeek 直连 · SSE 流式）═══
   // 主聊天直连 DeepSeek（EbbingFlow 记忆后端已移除，issue #33）；
   // 记忆提取类辅助调用（smallLLMCall）同样直连。
-  async callLLM(systemPrompt, gfId, userMessage, onDelta, onReasoning, img) {
+  async callLLM(systemPrompt, gfId, userMessage, onDelta, img) {
     const cfg = LLM_CONFIG;
     const endpoint = cfg.endpoint;   // ⚠ P0 回归修复（issue #59）：#33 移除 EbbingFlow 时误删了 endpoint 声明，fetch 处引用未定义变量——0.2.10/0.2.11 起聊天发消息必失败（回归测试发现）
     const apiKey = localStorage.getItem('deepseek_api_key');
@@ -2874,9 +2919,14 @@ ${favList || '（无）'}`,
     const week = ['日', '一', '二', '三', '四', '五', '六'][now.getDay()];
     const pad = (n) => String(n).padStart(2, '0');
     const timeStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（周${week}）${pad(now.getHours())}:${pad(now.getMinutes())}`;
+    // 深度思考开启时注入内心独白协议（issue #12）：独白走正文 <inner> 定界段，
+    // 模型 reasoning_content 思维链不再入库/展示（口吻与结构不可控，出戏且可能暴露提示词写法）。
+    const innerProto = this.deepThinkingOn()
+      ? '\n【内心独白】每次回复的最开头，先写一段内心独白，用 <inner> 和 </inner> 包起来：第一人称「我」、中文、一两句话，写你此刻心里真实的想法或情绪，贴合你的性格，像自言自语，不是对玩家说的话；不要写成分析、推理或回复草稿。写完 </inner> 换行，再开始正式回复正文。除开头这一段外，正文任何位置不要再出现 <inner> 标记。'
+      : '';
     messages.push({
       role: 'system',
-      content: `【运行时上下文，必须遵守】\n当前时间：${timeStr}。涉及现在几点、今天日期、星期、纪念日倒计时等一切时间表述时，以此为准；不要编造、不要根据对话间隔推测时间。\n【输出格式指令】检查上一条用户消息：如果你在回复中提到了自己的新喜好（喜欢的花、食物、音乐、电影、小习惯等），在回复末尾单独一行输出：【喜好：以「她」开头的简短概括】。没有提到新的喜好就完全不输出这一行，不要输出任何其他标记。`,
+      content: `【运行时上下文，必须遵守】\n当前时间：${timeStr}。涉及现在几点、今天日期、星期、纪念日倒计时等一切时间表述时，以此为准；不要编造、不要根据对话间隔推测时间。\n【输出格式指令】检查上一条用户消息：如果你在回复中提到了自己的新喜好（喜欢的花、食物、音乐、电影、小习惯等），在回复末尾单独一行输出：【喜好：以「她」开头的简短概括】。没有提到新的喜好就完全不输出这一行，不要输出任何其他标记。${innerProto}`,
     });
     // 当前消息：带图时改多模态 content 数组（vision 模型识别图片内容）
     const lastContent = img ? withImage(userMessage, img) : (userMessage || (img ? '[图片]' : ''));
@@ -2913,12 +2963,11 @@ ${favList || '（无）'}`,
         try { err.body = (await resp.text()).slice(0, 400); } catch (e2) { /* 忽略 */ }   // 服务端错误详情随异常上抛（issue #55 诊断）
         throw err;
       }
-      // SSE 流解析（delta.content 增量；reasoning_content 收集到 onReasoning）
+      // SSE 流解析（delta.content 增量；reasoning_content 忽略——issue #12 后独白走 <inner> 定界段）
       const reader = resp.body.getReader();
       const decoder = new TextDecoder('utf-8');
       let buffer = '';
       let full = '';
-      let reasoning = '';
       let streamDone = false;
       while (!streamDone) {
         const { done, value } = await reader.read();
@@ -2934,10 +2983,6 @@ ${favList || '（无）'}`,
           try {
             const json = JSON.parse(data);
             const delta = json.choices?.[0]?.delta;
-            if (delta && delta.reasoning_content) {
-              reasoning += delta.reasoning_content;
-              if (onReasoning) onReasoning(delta.reasoning_content);
-            }
             if (delta && delta.content) {
               full += delta.content;
               if (onDelta) onDelta(delta.content);
@@ -2945,7 +2990,6 @@ ${favList || '（无）'}`,
           } catch (e) { /* 忽略异常行 */ }
         }
       }
-      this._lastReasoning = reasoning;
       return full;
     } catch (e) {
       clearTimeout(timeout);

@@ -183,6 +183,8 @@ const App = {
       wallApplyBtn: document.getElementById('wall-apply-btn'),
       wallFileInput: document.getElementById('wall-file-input'),
       sbFont: document.getElementById('sb-font'),
+      sbVoiceReply: document.getElementById('sb-voice-reply'),
+      sbVoiceReplyMode: document.getElementById('sb-voice-reply-mode'),
       fontOverlay: document.getElementById('font-overlay'),
       fontModal: document.getElementById('font-modal'),
       fontOptions: document.getElementById('font-options'),
@@ -787,6 +789,65 @@ const App = {
     }
   },
   // 女友气泡朗读：合成（按 音色+mid+文本 内存缓存）→ 播放
+  // 语音气泡段合成（issue #13）：key 含段序——同段重进/点播直接命中缓存
+  async gfVoiceBuf(mid, si, speak) {
+    if (!this._ttsCache) this._ttsCache = new Map();
+    const key = this.ttsVoice() + ':' + mid + ':' + si + ':' + speak;
+    let buf = this._ttsCache.get(key);
+    if (!buf) {
+      buf = await this.synthesizeGfVoice(speak);
+      this._ttsCache.set(key, buf);
+    }
+    return buf;
+  },
+  // 语音气泡点播：无缓存则静默重合成（合成只依赖文本+情绪指令，可复现）
+  async playGfVoice(mid, si, speak, el) {
+    el.classList.add('loading');
+    try {
+      const buf = await this.gfVoiceBuf(mid, si, speak);
+      const durEl = el.querySelector('.mv-dur');
+      if (durEl) durEl.textContent = Math.max(1, Math.round(buf.duration)) + '″';
+      this.playAudioBuffer(buf, el, this._mediaCtx());
+    } catch (e) {
+      console.error('[playGfVoice]', e);
+      el.classList.remove('loading');
+      this.toast(e.message || '语音合成失败');
+    }
+  },
+  // gf 语音气泡构建（issue #13）：复用玩家侧 mic 形态；动作描写存在时给「原文」chip 展开看全文
+  appendGfVoiceBubble(bubble, mid, si, speak, raw) {
+    const est = Math.max(1, Math.round(speak.length / 4));
+    const voice = document.createElement('div');
+    voice.className = 'msg-voice';
+    voice.title = '点击播放';
+    voice.addEventListener('click', () => this.playGfVoice(mid, si, speak, voice));
+    const bars = document.createElement('span');
+    bars.className = 'mv-bars';
+    bars.innerHTML = '<i></i><i></i><i></i><i></i>';
+    const d = document.createElement('span');
+    d.className = 'mv-dur';
+    d.textContent = est + '″';
+    voice.appendChild(bars);
+    voice.appendChild(d);
+    bubble.appendChild(voice);
+    if (raw && raw !== speak) {
+      const tr = document.createElement('button');
+      tr.type = 'button';
+      tr.className = 'mv-transcript-toggle';
+      tr.textContent = '原文';
+      tr.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const vt = bubble.querySelector('.mv-transcript');
+        if (vt) vt.classList.toggle('show');
+        tr.textContent = vt && vt.classList.contains('show') ? '收起' : '原文';
+      });
+      bubble.appendChild(tr);
+      const vt = document.createElement('div');
+      vt.className = 'mv-transcript';
+      vt.textContent = raw;
+      bubble.appendChild(vt);
+    }
+  },
   async playGfTTS(mid, text, uiEl) {
     if (!this.hasStepKey()) {
       this.toast('先在「设置 API Key」里填写阶跃 StepFun Key 才能朗读');
@@ -1875,8 +1936,12 @@ const App = {
         // 内心独白（💭 ta的独白）：整组回复渲染一次，置于首条气泡上方
         if (m.inner) this.appendReasoningBlock(m.id, m.inner, frag);   // 💭 ta的独白（issue #12：只渲染 <inner> 协议字段；旧 reasoning=思维链不再展示，数据保留）
         // 同一次回复的多个气泡（\n 分隔）拆成多条渲染
-        for (const seg of this.segsOf(m)) {
-          if (seg.trim()) this.appendMessage('gf', seg, true, null, m.id, null, frag);
+        const vf = m.vmode ? (m.vflags || []) : null;
+        for (let si = 0; si < this.segsOf(m).length; si++) {
+          const seg = this.segsOf(m)[si];
+          if (!seg.trim()) continue;
+          const voice = vf && vf[si] ? { speak: this.stripActionText(seg) || seg, idx: si } : null;
+          this.appendMessage('gf', seg, true, null, m.id, null, frag, voice);
         }
       } else {
         this.appendMessage(m.role, m.text, true, null, m.id, {
@@ -2036,7 +2101,7 @@ const App = {
   // gfId 指定气泡归属（流式回复跨女友时用），缺省为当前女友
   // media 参数（issue #8 图片 / #38 语音）：{ img: dataURL|'LOST', imgLost, audio: dataURL, audioLost, dur }
   // target 参数（issue #26）：分批渲染时传入 DocumentFragment，缺省仍为对话区
-  appendMessage(role, text, noScroll, gfId, mid, media, target) {
+  appendMessage(role, text, noScroll, gfId, mid, media, target, voice) {
     const targetGf = gfId || this.state.currentGf;
     const imgData = media && media.img;
     const audioData = media && media.audio;
@@ -2126,6 +2191,14 @@ const App = {
         bubble.appendChild(lostV);
         if (text) bubble.appendChild(document.createTextNode(text));
       }
+      wrap.appendChild(bubble);
+      this.attachMsgOps(wrap, area, noScroll);
+      return;
+    }
+    // gf 语音气泡（issue #13）：语音气泡模式的历史/变形渲染路径
+    if (role === 'gf' && voice && voice.speak) {
+      wrap.dataset.seg = voice.idx;   // 自动合成的定位锚（synthVoiceReply 按段查询）
+      this.appendGfVoiceBubble(bubble, mid, voice.idx, voice.speak, text);
       wrap.appendChild(bubble);
       this.attachMsgOps(wrap, area, noScroll);
       return;
@@ -2450,12 +2523,105 @@ const App = {
     const clean = bubbles
       .map(b => this.stripFavTags(gfId, b))
       .filter(b => b.trim());
+    let item = null;
     if (clean.length) {
-      const item = { role: 'gf', text: clean.join('\n'), ts: Date.now(), id: mid || this.nextId() };
+      item = { role: 'gf', text: clean.join('\n'), ts: Date.now(), id: mid || this.nextId() };
       if (inner && inner.trim()) item.inner = inner.trim();   // 💭 ta的独白（issue #12：<inner> 协议解析结果，无独白不存字段）
+      // 语音气泡模式（issue #13）：定稿标记每段可朗读性（stripActionText 剥后非空），随后 DOM 变形 + 逐条自动合成
+      if (this.voiceReplyOn() && this.hasStepKey()) {
+        item.vmode = true;
+        item.vflags = clean.map(b => (this.stripActionText(b) ? 1 : 0));
+      }
       this.state.histories[gfId].push(item);
       this.saveHistory(gfId);
     }
+    if (item && item.vmode) this.morphReplyToVoice(gfId, item.id);
+  },
+
+  // 语音气泡变形（issue #13）：移除该回复已上屏的文字气泡，按 vflags 重渲染（可朗读段 = 语音气泡，
+  // 纯动作段保留文字），并逐条自动合成——串行防限流；单条失败该段降级回文字，绝不丢消息
+  morphReplyToVoice(gfId, mid) {
+    const area = this.el.dialogueArea;
+    const hist = this.state.histories[gfId] || [];
+    const item = [...hist].reverse().find(h => h.id === mid);
+    if (!item || !item.vmode) return;
+    area.querySelectorAll(`.msg.gf[data-mid="${mid}"]`).forEach(el => {
+      if (!el.querySelector('.reasoning-row')) el.remove();   // 💭 独白块保留
+    });
+    const frag = document.createDocumentFragment();
+    this.segsOf(item).forEach((seg, si) => {
+      if (!seg.trim()) return;
+      const vf = (item.vflags || [])[si] ? { speak: this.stripActionText(seg) || seg, idx: si } : null;
+      this.appendMessage('gf', seg, false, gfId, mid, null, frag, vf);
+    });
+    area.appendChild(frag);
+    if (this._pinnedToBottom) this.scrollToBottom(false);
+    this.synthVoiceReply(gfId, mid);
+  },
+  // 逐条合成（串行防限流）：完成后回填真实时长；单条失败该段还原文字
+  async synthVoiceReply(gfId, mid) {
+    const hist = this.state.histories[gfId] || [];
+    const item = [...hist].reverse().find(h => h.id === mid);
+    if (!item || !item.vmode) return;
+    const segs = this.segsOf(item);
+    for (let si = 0; si < segs.length; si++) {
+      if (!(item.vflags || [])[si]) continue;
+      const el = this.el.dialogueArea.querySelector(`.msg.gf[data-mid="${mid}"][data-seg="${si}"] .msg-voice`);
+      if (!el) continue;
+      el.classList.add('loading');
+      try {
+        const buf = await this.gfVoiceBuf(mid, si, this.stripActionText(segs[si]) || segs[si]);
+        el.dataset.synth = '1';   // 实测标记：真实合成已完成
+        const durEl = el.querySelector('.mv-dur');
+        if (durEl) durEl.textContent = Math.max(1, Math.round(buf.duration)) + '″';
+      } catch (e) {
+        console.error('[synthVoiceReply]', e);
+        this.degradeVoiceSeg(mid, si, segs[si]);
+      } finally {
+        el.classList.remove('loading');
+      }
+    }
+  },
+  // 单段合成失败 → 该段气泡还原为文字（消息绝不丢）
+  degradeVoiceSeg(mid, si, seg) {
+    const wrap = this.el.dialogueArea.querySelector(`.msg.gf[data-mid="${mid}"][data-seg="${si}"]`);
+    if (!wrap) return;
+    const bubble = wrap.querySelector('.msg-text');
+    if (!bubble) return;
+    const v = bubble.querySelector('.msg-voice');
+    if (v) v.remove();
+    const tr = bubble.querySelectorAll('.mv-transcript-toggle, .mv-transcript');
+    tr.forEach(el => el.remove());
+    bubble.appendChild(document.createTextNode(seg));
+  },
+
+  // ═══ 语音气泡模式（issue #13）═══
+  // 全局开关（侧栏）：off = 文字 + 手动朗读（现状）；on = 女友回复定稿后自动变形为语音气泡（逐条合成，失败降级文字）。
+  // 历史只存 vmode/vflags 标记、不落音频——点播时无缓存则静默重合成（合成只依赖文本+情绪指令，可复现）。
+  voiceReplyOn() { return localStorage.getItem('aigf_voice_reply') === 'voice'; },
+  syncVoiceReplyUi() {
+    if (!this.el.sbVoiceReplyMode) return;
+    this.el.sbVoiceReplyMode.textContent = this.voiceReplyOn() ? '语音气泡' : '文字';
+  },
+  toggleVoiceReply() {
+    const on = this.voiceReplyOn();
+    if (on) {
+      localStorage.removeItem('aigf_voice_reply');
+      this.toast('语音回复：文字（点朗读键播放）');
+    } else {
+      localStorage.setItem('aigf_voice_reply', 'voice');
+      this.toast(this.hasStepKey() ? '语音气泡已开：她的回复将直接以语音送达' : '语音气泡已开：还需阶跃 Key 才能合成，期间回复保持文字');
+    }
+    this.syncVoiceReplyUi();
+  },
+  // 动作描写剥离（issue #13 关键约束）：朗读只读自然对话——（…）/(…)/*…*/〔…〕及 markdown 斜体括注全部剥除。
+  // 只剥成对括注、宁少勿滥；剥后为空的段由调用方守卫（整条纯动作 → 回落原文，绝不合成空白音频）。
+  stripActionText(text) {
+    let s = String(text || '');
+    s = s.replace(/（[^（）]*）/g, ' ').replace(/\([^()]*\)/g, ' ');
+    s = s.replace(/〔[^〔〕]*〕/g, ' ');
+    s = s.replace(/\*[^*\n]+\*/g, ' ');
+    return s.replace(/\s+/g, ' ').trim();
   },
 
   // ═══ 喜好标记提取（低门槛 · 零额外调用） ═══
@@ -4198,6 +4364,9 @@ ${favList || '（无）'}`,
     this.el.quoteClose.addEventListener('click', () => this.clearQuote());
     // 字体选择（issue #5）
     this.el.sbFont.addEventListener('click', () => { this.toggleSidebar(false); this.openFontModal(); });
+    // 语音回复模式（issue #13）：文字 / 语音气泡二选一（全局持久化）
+    this.el.sbVoiceReply.addEventListener('click', () => this.toggleVoiceReply());
+    this.syncVoiceReplyUi();
     this.el.fontOptions.addEventListener('click', (e) => {
       const btn = e.target.closest('.font-option');
       if (btn) this.setFont(btn.dataset.fontKey);

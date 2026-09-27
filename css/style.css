@@ -1980,14 +1980,13 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 .profile-panel.has-hero .profile-header {
   background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 66%, transparent), color-mix(in srgb, var(--bg) 84%, transparent));
 }
-/* 角色专属主题：分区卡片化——半透明角色色调 + 自然圆角 + 毛玻璃（立绘透出） */
+/* 角色专属主题：分区卡片化——半透明浅底（无磨砂）+ 自然圆角，立绘透出不被遮挡（issue #6 跟进/owner 反馈）。
+   透明度基准：比 header 雾化层（66% bg）略透明，取 56%；磨砂 blur 会把立绘糊掉，弃用 */
 html[data-theme="gf"] .profile-section {
-  background: var(--card-bg);
+  background: color-mix(in srgb, var(--bg) 56%, transparent);
   border: 1px solid var(--card-border);
   border-radius: 18px;
   padding: 14px 16px;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   box-shadow: var(--shadow-tiny);
 }
 html[data-theme="gf"] .profile-body { gap: 16px; }

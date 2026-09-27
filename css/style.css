@@ -102,6 +102,12 @@ body[data-gf="tangtang"] {
   --gf-grad: linear-gradient(135deg, #ECC38B, #E0B06C);
   --on-gf: #4E4022;                 /* 杏橙底上的深杏字（保证对比） */
 }
+body[data-gf="jiying"] {
+  --gf-color-base: #8FA8C9;         /* 季萤 雾蓝 */
+  --gf-color-soft: rgba(143, 168, 201, .2);
+  --gf-grad: linear-gradient(135deg, #A8BCD8, #8FA8C9);
+  --on-gf: #2F3B52;                 /* 雾蓝底上的深蓝字（保证对比） */
+}
 
 /* ═══ 纯黑主题（OLED · 真黑底 + 深灰分层）═══
    issue #48：接替月见的暗色生态位；无壁纸，层次全靠分层底色 + 细边框 */

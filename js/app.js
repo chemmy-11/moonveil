@@ -3341,6 +3341,32 @@ ${favList || '（无）'}`,
     const p = Math.min(1, Math.max(0, body.scrollTop / 110));
     this.el.profilePanel.style.setProperty('--pc', p.toFixed(3));
   },
+  // Android 返回手势/按键（issue #95）：按关闭优先级栈逐层关浮层，一次返回关一层；
+  // 无浮层时沿用 Android 惯例——历史可退则退，否则退出 App（不改退出语义）。
+  // 栈顺序 = 视觉叠放顺序：预览/抽屉/菜单 → 弹窗 → 主页 → 侧栏（侧栏是 .open 语义，单独判）
+  handleAndroidBack() {
+    const hidden = (el) => !el || el.classList.contains('hidden');
+    const stack = [
+      [this.el.lightboxOverlay, () => this.closeLightbox()],
+      [this.el.voiceMenu, () => this.closeVoiceMenu()],
+      [this.el.inputPlusMenu, () => this.closeInputPlusMenu()],
+      [this.el.msgMenu, () => this.closeMsgMenu()],
+      [this.el.memoryMenu, () => this.closeMemMenu()],
+      [this.el.apiModal, () => this.closeApiModal()],
+      [this.el.createOverlay, () => this.closeCreateModal()],
+      [this.el.wallOverlay, () => this.closeWallModal()],
+      [this.el.fontOverlay, () => this.closeFontModal()],
+      [this.el.backupOverlay, () => this.closeBackup()],
+      [this.el.updateOverlay, () => this.closeUpdate()],
+      [this.el.profilePanel, () => this.closeProfile()],
+    ];
+    for (const [el, close] of stack) {
+      if (!hidden(el)) { close(); return; }
+    }
+    if (this.el.sidebar && this.el.sidebar.classList.contains('open')) { this.toggleSidebar(false); return; }
+    if (window.history.length > 1) history.back();
+    else window.Capacitor.Plugins.App.exitApp();
+  },
   openProfile() {
     const gf = this.allGfs()[this.state.currentGf];
     if (!gf || !gf.profile) return;
@@ -3892,6 +3918,11 @@ ${favList || '（无）'}`,
           window.open(a.href, '_blank', 'noopener');
         });
       });
+    }
+    // Android 返回手势/按键（issue #95）：浮层逐层关闭，避免浮层开着时一按直接退出 App。
+    // 仅原生环境注册（Web 端无 backButton 概念）
+    if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+      window.Capacitor.Plugins.App.addListener('backButton', () => this.handleAndroidBack());
     }
     this.el.apiKeyInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.handleApiKeySave();

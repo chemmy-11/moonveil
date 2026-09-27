@@ -86,6 +86,14 @@ const App = {
     this._pinnedToBottom = true;   // 贴底跟踪初始态：对话区默认贴底（issue #4）
     try { this.applyTheme(); } catch (e) { console.error('[init] applyTheme', e); }
     try { this.applyFont(); } catch (e) { console.error('[init] applyFont', e); }
+    try {
+      // 字体晚于首帧就绪会让行高计量偏小（issue #17）：字体加载完成后再重算一次输入框高度
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.autoResizeInput());
+    } catch (e) { /* 忽略 */ }
+    try {
+      // 首帧 clamp 流式字号未稳定时写入的高度可能偏小（issue #17）：load 后兜底重算
+      window.addEventListener('load', () => this.autoResizeInput(), { once: true });
+    } catch (e) { /* 忽略 */ }
     try { this.initWall(); } catch (e) { console.error('[init] initWall', e); }
     try { this.loadAllHistories(); } catch (e) { console.error('[init] loadAllHistories', e); }
     try { this.renderGfList(); } catch (e) { console.error('[init] renderGfList', e); }
@@ -366,6 +374,7 @@ const App = {
     } else {
       document.documentElement.removeAttribute('data-font');   // '' = 系统默认栈
     }
+    if (this.el.playerInput) this.autoResizeInput();   // 行高随字体变，已增高的输入框按新行高重算上限（issue #17）
   },
   openFontModal() {
     const cur = localStorage.getItem('aigf_font') || '';
@@ -3431,7 +3440,13 @@ ${favList || '（无）'}`,
   autoResizeInput() {
     const ta = this.el.playerInput;
     ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    // 上限 = 2.5 行 + 上下 padding（issue #17）：实时读计算样式——双端 padding 差异与
+    // 字体档（#5）切换后的行高变化自动适配，不写死 px；「露半行」是微信式的还有内容暗示
+    const cs = getComputedStyle(ta);
+    const lineH = parseFloat(cs.lineHeight);
+    const padV = (parseFloat(cs.paddingTop) || 0) + (parseFloat(cs.paddingBottom) || 0);
+    const cap = Number.isFinite(lineH) ? Math.round(lineH * 2.5 + padV) : 120;   // 行高取值异常回落旧上限
+    ta.style.height = Math.min(ta.scrollHeight, cap) + 'px';
   },
 
   // ═══ 音效（WebAudio，首次交互后初始化） ═══

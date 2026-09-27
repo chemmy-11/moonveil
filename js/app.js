@@ -609,16 +609,19 @@ const App = {
   // RSS 无 CORS 头——Android 端走 CapacitorHttp 原生请求绕过；Web 端 fetch 会被 CORS 拦截（明确提示）。
   // 双端点回落（issue #70）：cn 不可达/被劫持/空结果时换 www 再试一次——真机网络差异保险；
   // 超时（AbortError）不回落：真慢换端点也慢，避免等待翻倍。
+  // mkt=zh-CN（issue #19）：缺省市场识别下 RSS 对中文 query 返回字面切词的降级排序
+  // （「甄嬛传 演员表」→「甄」字百科），显式声明市场后与网页版排序一致——对照实测。
   async webSearch(query) {
     const q = encodeURIComponent(query.slice(0, this.SEARCH_QUERY_LEN));
     const endpoints = [
-      'https://cn.bing.com/search?q=' + q + '&format=rss&count=10',
-      'https://www.bing.com/search?q=' + q + '&format=rss&count=10',
+      'https://cn.bing.com/search?q=' + q + '&format=rss&count=10&mkt=zh-CN',
+      'https://www.bing.com/search?q=' + q + '&format=rss&count=10&mkt=zh-CN',
     ];
     let lastErr = null;
     for (const url of endpoints) {
       try {
         const items = this._parseBingRss(await this._fetchBingRss(url));
+        console.log('[webSearch]', new URL(url).host, items.length + ' items, q=' + query.slice(0, 40));
         if (items.length) return this._formatSearchBlock(items);
         lastErr = new Error('empty results');
       } catch (e) {
@@ -627,6 +630,21 @@ const App = {
       }
     }
     throw lastErr || new Error('search failed');
+  },
+  // 检索 query 提炼（issue #19）：口语原句直接搜索命中字面切词（「那个演甄嬛传的演员」→「那个」词汇
+  // 百科），检索前用 small 模型提炼成领域关键词。要点：不保留口语语序、去虚词、歧义时间词转领域词
+  // （「适不适合洗车」→「洗车指数」——保留原句词序仍会字面命中鲁迅《明天》）。失败/超时回退原文截断。
+  async refineSearchQuery(text) {
+    try {
+      const out = await this.smallLLMCall([
+        { role: 'system', content: '把用户的话提炼成中文网络搜索词。只输出搜索词本身（4~15字），不要任何解释、引号或句号。要求：用领域关键词，去掉「帮我/一下/那个/我想」等口语虚词，不保留整句语序；生活场景用行业词（如「适不适合洗车」提炼为「洗车指数 明天」）。' },
+        { role: 'user', content: text.slice(0, 120) },
+      ], 60, 8000);
+      const s = String(out || '').trim().replace(/^["「『]|["」』]/g, '').replace(/[。.！!？?]+$/, '');
+      return (s && s.length >= 2) ? s.slice(0, 30) : null;
+    } catch (e) {
+      return null;
+    }
   },
   async _fetchBingRss(url) {
     const capHttp = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.CapacitorHttp;
@@ -2328,13 +2346,15 @@ const App = {
       this.queueBubble(gfId, seg, bubbles.length === 1, replyId);  // 入队延迟上屏；首条气泡带提示音
     };
 
-    // 联网搜索（issue #9）：开关开启且有文字时，先检索再回答。
+    // 联网搜索（issue #9）：开关开启且有文字时，先提炼检索词再检索（issue #19），检索块拼进本次 LLM 消息。
     // 检索块只拼进本次 LLM 的 user 消息，历史项存原文——记忆提取天然不消费检索块。
     // 失败/超时静默降级：不带检索结果照常发送，绝不阻塞。
     let llmMessage = text;
+    this.showTyping(gfId);   // 提前（issue #19）：提炼+检索最长 ~20s，让打字指示覆盖等待期，消除「没反应」体感
     if (this.state.searchEnabled && text) {
       try {
-        const block = await this.webSearch(text);
+        const refined = await this.refineSearchQuery(text);
+        const block = await this.webSearch(refined || text);
         llmMessage = block + '\n\n【用户消息】' + text;
       } catch (e) {
         console.error('[webSearch]', e);
@@ -2349,7 +2369,6 @@ const App = {
       }
     }
 
-    this.showTyping(gfId);
     try {
       await this.callLLM(gf.prompt, gfId, llmMessage, (delta) => {
         gotContent = true;

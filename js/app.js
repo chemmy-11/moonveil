@@ -3929,6 +3929,7 @@ ${favList || '（无）'}`,
       }
       this.state.editingProvider = null;   // 保存后收起编辑表单
     }
+    this.refreshCustomLlmUi();   // 槽变更先刷列表——后续 Key 校验的提前 return 不应留下陈旧 DOM（#52 回归）
     const key = this.el.apiKeyInput.value.trim();
     if (!key && !this.useCustomLlm()) { this.toast('Key 不能为空（或改用自定义供应商）'); return; }
     const wasFirstKey = !localStorage.getItem('deepseek_api_key') && !!key;

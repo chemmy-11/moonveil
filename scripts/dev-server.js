@@ -3,6 +3,7 @@
 // 月见开发服务器 — 纯静态文件服务（默认 8080）
 //   · serve 项目根目录（月见前端）
 //   · （原 EbbingFlow 反代层已随该后端移除，issue #33）
+//   · 所有响应带 no-store：owner 验证预览（127.0.0.1:8135）普通刷新即最新，无需清缓存（issue #28）
 // 用法: node scripts/dev-server.js [端口]    默认 8080
 // ═══════════════════════════════════════════════════════════
 const http = require('http');
@@ -22,14 +23,16 @@ const MIME = {
   '.woff2': 'font/woff2', '.ttf': 'font/ttf', '.mp3': 'audio/mpeg',
 };
 
+const NO_CACHE = { 'Cache-Control': 'no-store, must-revalidate' };
+
 function serveStatic(req, res, pathname) {
   let rel = pathname === '/' ? 'index.html' : pathname.slice(1);
   const fp = path.join(ROOT, rel);
   if (!fp.startsWith(ROOT)) { res.writeHead(403); res.end('Forbidden'); return; }
   fs.readFile(fp, (err, data) => {
-    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' }); res.end('404 Not Found'); return; }
+    if (err) { res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8', ...NO_CACHE }); res.end('404 Not Found'); return; }
     const ext = path.extname(fp).toLowerCase();
-    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream', ...NO_CACHE });
     res.end(data);
   });
 }

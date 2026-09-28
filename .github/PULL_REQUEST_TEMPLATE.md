@@ -31,4 +31,4 @@ Closes #
 ## 合并方式
 
 - 优先 **Squash and merge**（main 历史保持「一条提交 = 一个完整改动」），squash 标题遵循提交信息格式
-- 合并后删除功能分支；发版由 owner 授权后走 OTA 流程（APK 推 `moonveil-updates-public` + latest.json）
+- 合并后删除功能分支；发版由 05:00「收敛发版与文档」自动化执行——回归全绿后自动 bump + OTA + Release（owner 2026-09-29 授权）；其余协作者不改版本字段、不发版

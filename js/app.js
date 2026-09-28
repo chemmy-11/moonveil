@@ -2751,6 +2751,33 @@ const App = {
   // ═══ 喜好标记提取（低门槛 · 零额外调用） ═══
   // 「【喜好：xxx】」从回复文本中剥离（用户不可见）并入库去重，返回干净文本。
   // 上屏（pumpQueue）与历史保存（commitReply）都会调用，相同条目去重保证幂等。
+  // 近重复判定（issue #32）：字符集合重合率 ≥60% 视为同一偏好——短标签（2~8 字）
+  // 下比词级比对稳：「喜欢旧书店」/「爱逛旧书店」重合 3/5、「喜欢旧书」3/3 均判同；
+  // 「猫咪」/「猫粮」1/2 不判同。三条入库路径（本函数/结构化 add/旧行解析）统一走它。
+  favSimilar(a, b) {
+    a = (a || '').trim(); b = (b || '').trim();
+    if (!a || !b) return false;
+    if (a === b) return true;
+    if (a.length < 2 || b.length < 2) return a.includes(b) || b.includes(a);
+    const A = new Set(a), B = new Set(b);
+    let inter = 0;
+    for (const ch of A) if (B.has(ch)) inter++;
+    return inter / Math.min(A.size, B.size) >= 0.6;
+  },
+  // 归因守卫（issue #32 联动 #25 身份头）：条目文本若只出现在【用户】的消息里、
+  // 从未出现在她的消息里——视为把用户喜好安到她头上，拒收。
+  // 确定性拦截最恶劣 badcase（用户说「我喜欢吃辣」→ 卡上「她喜欢吃辣」），
+  // LLM 层排除规则之外的最后闸门；双侧都提过则放行（归 LLM 判定）。
+  favUserOnly(gfId, text) {
+    const t = (text || '').trim();
+    if (!t) return false;
+    let inUser = false, inGf = false;
+    for (const m of (this.state.histories[gfId] || []).slice(-12)) {
+      if (!m.text || !m.text.includes(t)) continue;
+      if (m.role === 'player') inUser = true; else inGf = true;
+    }
+    return inUser && !inGf;
+  },
   stripFavTags(gfId, text) {
     const re = /【喜好[:：]\s*([^【】]{2,40}?)】/g;
     const favs = this.state.favs[gfId] || (this.state.favs[gfId] = []);
@@ -2758,7 +2785,7 @@ const App = {
     let m;
     while ((m = re.exec(text)) !== null) {
       const item = m[1].trim().replace(/^她(喜欢|爱|讨厌|不喜欢|爱吃|爱喝|爱听)/, '').trim();
-      if (item && !favs.some(f => f.text === item)) {
+      if (item && !favs.some(f => this.favSimilar(f.text, item)) && !this.favUserOnly(gfId, item)) {
         favs.push({ id: this.genMemId(), ts: Date.now(), text: item, pinned: false, source: 'auto' });
         this.evictOldest(favs, this.MAX_FAVS);
         added = true;
@@ -2849,14 +2876,22 @@ const App = {
       const out = await this.smallLLMCall([
         {
           role: 'system',
-          content: `你是偏好记录员。从对话中提取关于「她」（${gf.name}）的喜好变化：她喜欢或讨厌的事物、口味、习惯、爱好（花、食物、音乐、电影、小习惯等）。标准宽松：她提到或展现出来的都算，宁多勿漏。
+          content: `你是偏好记录员。从对话中提取关于「她」（${gf.name}）的喜好变化：她喜欢或讨厌的事物、口味、习惯、爱好（花、食物、音乐、电影、小习惯等）。
+【归因判定（最高优先级）】材料中【用户】开头是对方发的话，【${gf.name}】开头才是她本人说的——只记录她的偏好；【用户】说的任何喜好（如「我喜欢吃辣」）绝不是她的，绝不入库。
+【提取标准】她本人明确表达的偏好，或她的言行稳定体现的偏好才算。以下一律不提取：
+- 对方（用户）的喜好或习惯
+- 假设/条件句（「如果养猫大概会喜欢…」「要是…也许…」）
+- 转述第三人的喜好（「我朋友超爱爬山」）
+- 单次行为（「今天想喝奶茶」≠ 一直爱喝奶茶）
+- 问候客套与抽象感受（「喜欢和你聊天」类不算具体偏好）
+【依据要求】每条 add 必须给 evidence：从她本人的原话里摘 ≤12 字的短依据；给不出依据就不提取。
 对记忆库执行操作：
-- add：新发现的喜好（text 为 2~8 个字，直接写事物本身，不要「她喜欢」前缀）
-- delete：对话中明确表示她不再喜欢某条旧喜好（target_id 指向该条）
-已有喜好（不要 add 重复）：
+- add：新发现的她的喜好（text 为 2~8 个字，直接写事物本身，不要「她喜欢」前缀；evidence 为原话短依据）
+- delete：对话中她明确表示不再喜欢某条旧喜好（target_id 指向该条）
+已有喜好（不要 add 重复，也不要 add 与既有条目意思相近的近重复）：
 ${existing || '（暂无）'}
 没有需要执行的操作就输出 []。只输出 JSON 数组，不要任何其他文字：
-[{"op":"add","text":"洋桔梗"},{"op":"delete","target_id":"id"}]`,
+[{"op":"add","text":"洋桔梗","evidence":"新到的洋桔梗很好看"},{"op":"delete","target_id":"id"}]`,
         },
         { role: 'user', content: recent + '\n\n请输出喜好操作 JSON 数组（没有就输出 []）。' },
       ], 800, 15000);
@@ -2876,8 +2911,9 @@ ${existing || '（暂无）'}
               if (op.op === 'add' && typeof op.text === 'string') {
                 const line = op.text.trim();
                 if (line.length < 2 || line.length > 16) continue;   // chips 保持短标签
-                if (favs.some(f => f.text === line)) continue;
-                favs.push({ id: this.genMemId(), ts: Date.now(), text: line, pinned: false, source: 'auto' });
+                if (favs.some(f => this.favSimilar(f.text, line))) continue;   // 全等 → 近重复（issue #32）
+                if (this.favUserOnly(gfId, line)) { console.warn('[extractFavs] 拒收疑似用户偏好:', line); continue; }   // 归因守卫
+                favs.push({ id: this.genMemId(), ts: Date.now(), text: line, pinned: false, source: 'auto', evidence: (typeof op.evidence === 'string' ? op.evidence.trim().slice(0, 24) : '') });
                 this.evictOldest(favs, this.MAX_FAVS);
                 added++;
               } else if (op.op === 'delete' && op.target_id) {
@@ -2895,7 +2931,8 @@ ${existing || '（暂无）'}
       for (let line of (out.includes('无') ? '' : out).split('\n')) {
         line = line.replace(/^[-*•\d.、\s]+/, '').replace(/^她(喜欢|爱|讨厌|不喜欢|爱吃|爱喝|爱听)/, '').trim();
         if (line.length < 2 || line.length > 16) continue;   // chips 保持短标签
-        if (favs.some(f => f.text === line)) continue;
+        if (favs.some(f => this.favSimilar(f.text, line))) continue;   // 近重复（issue #32）
+        if (this.favUserOnly(gfId, line)) { console.warn('[extractFavs] 拒收疑似用户偏好:', line); continue; }
         favs.push({ id: this.genMemId(), ts: Date.now(), text: line, pinned: false, source: 'auto' });
         this.evictOldest(favs, this.MAX_FAVS);
         added++;
@@ -3381,7 +3418,7 @@ ${favList || '（无）'}`,
       : '';
     messages.push({
       role: 'system',
-      content: `【运行时上下文，必须遵守】\n当前时间：${timeStr}。涉及现在几点、今天日期、星期、纪念日倒计时等一切时间表述时，以此为准；不要编造、不要根据对话间隔推测时间。\n【说话人标记】历史消息开头的【用户】/【${gfName}】标记仅供你分辨说话人，据此准确归因（谁说的、谁的喜好、谁的经历），绝不把用户说的话当成自己说的；也绝不在你的回复中复现【用户】【${gfName}】这类标记。\n【输出格式指令】检查上一条用户消息：如果你在回复中提到了自己的新喜好（喜欢的花、食物、音乐、电影、小习惯等），在回复末尾单独一行输出：【喜好：以「她」开头的简短概括】。没有提到新的喜好就完全不输出这一行，不要输出任何其他标记。${innerProto}`,
+      content: `【运行时上下文，必须遵守】\n当前时间：${timeStr}。涉及现在几点、今天日期、星期、纪念日倒计时等一切时间表述时，以此为准；不要编造、不要根据对话间隔推测时间。\n【说话人标记】历史消息开头的【用户】/【${gfName}】标记仅供你分辨说话人，据此准确归因（谁说的、谁的喜好、谁的经历），绝不把用户说的话当成自己说的；也绝不在你的回复中复现【用户】【${gfName}】这类标记。\n【输出格式指令】检查上一条用户消息：如果你在回复中提到了自己的新喜好（喜欢的花、食物、音乐、电影、小习惯等；只报你自己的，对方消息里提到的喜好不算），在回复末尾单独一行输出：【喜好：以「她」开头的简短概括】。没有提到新的喜好就完全不输出这一行，不要输出任何其他标记。${innerProto}`,
     });
     // 当前消息：带图时改多模态 content 数组（vision 模型识别图片内容）
     const lastContent = img ? withImage(userMessage, img) : (userMessage || (img ? '[图片]' : ''));

@@ -2238,7 +2238,7 @@ html[data-theme="gf"] .profile-body { gap: 16px; }
 .lib-avatar {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 50%;
   object-fit: cover;
   flex: none;
 }

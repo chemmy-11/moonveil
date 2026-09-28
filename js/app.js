@@ -759,6 +759,14 @@ const App = {
     return s.slice(0, this.SEARCH_SNIPPET_LEN);
   },
 
+  // 句尾句号剥离（issue #43 层二 · 渲染层兜底）：微信式拟真——真人发消息不用句号收尾，
+  // prompt 约束（层一）偶有漏网 + 存量历史消息统一在显示层剥净。只剥尾部连续中文句号
+  // （含句号前后的尾随空白）；英文句点（小数 3.5）、省略号（…）、？/！/～/颜文字不碰。
+  // 只影响显示：hist 存原文（记忆归因完整），TTS 朗读不受影响。
+  stripTrailingPeriod(text) {
+    return String(text || '').replace(/\s*。+\s*$/, '');
+  },
+
   // ═══ 语音系统（issue #38 v1）═══
   // 语音输入（ASR）：DashScope fun-asr-realtime WS 直连（协议来源：aliyun 官方浏览器 JS 示例）
   // wss://dashscope.aliyuncs.com/api-ws/v1/inference/?api_key=<KEY>（query 传 key，浏览器无 CORS 限制）
@@ -2197,6 +2205,7 @@ const App = {
       return;
     }
 
+    if (role === 'gf' && text) text = this.stripTrailingPeriod(text);   // #43 层二：显示级剥离，hist 存原文
     const area = target || this.el.dialogueArea;
     const wrap = document.createElement('div');
     wrap.className = 'msg ' + (role === 'player' ? 'player' : 'gf');

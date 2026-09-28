@@ -66,7 +66,7 @@ npm run dev        # 或 python -m http.server 8080
 - **阶跃 StepFun Key** — 启用朗读（StepAudio 音色）
 - **DashScope Key** — 启用语音输入转文字
 
-模型可换：设置面板里可接任意 **OpenAI 兼容供应商**（Base URL + Key + Model，无需改代码），也可直接修改 `js/data.js` 中的 `LLM_CONFIG`。
+模型可换：设置面板里可添加多个 **OpenAI 兼容供应商**（Base URL + Key + Model，备注名命名），与 DeepSeek 同级一键切换，无需改代码；也可直接修改 `js/data.js` 中的 `LLM_CONFIG`。
 
 ## 🛠 面向开发者
 

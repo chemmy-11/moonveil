@@ -224,6 +224,8 @@ html[data-theme="black"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, 
 /* 主页打开时隐藏聊天区顶栏（issue #55）：panel 状态栏避让让出的顶部区域透出 top-bar
    形成灰色长条——visibility 不触发重排，closeProfile 移除 class 即恢复 */
 body.profile-open #top-bar { visibility: hidden; }
+/* gf 主题顶栏透明度对齐统一基准 .78（issue #65）；blur 保留维持层次 */
+html[data-theme="gf"] #top-bar { background: color-mix(in srgb, var(--card-bg) 78%, transparent); }
 #top-bar {
   height: var(--topbar-h);
   flex: none;
@@ -1623,10 +1625,6 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   margin-bottom: calc(10px - 5px * var(--pc, 0));
 }
 .profile-name { font-size: var(--text-xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-widest); }
-/* header 无雾化底后（issue #53）的立绘上文字可读兜底：细描边式阴影，不加底色 */
-.has-hero .profile-name, .has-hero .profile-tag, .has-hero .profile-signature {
-  text-shadow: 0 1px 3px color-mix(in srgb, var(--bg) 72%, transparent), 0 0 10px color-mix(in srgb, var(--bg) 45%, transparent);
-}
 .profile-tag {
   font-size: var(--text-sm);
   color: #FFFFFF;                    /* #60：满饱和 gf 色底 + 白字，立绘上显眼 */
@@ -2125,28 +2123,6 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   50% { opacity: 1; }
 }
 
-/* ─── 角色立绘主页背景（issue #69）─── */
-.profile-panel.has-hero {
-  background-size: cover;
-  background-position: top center;
-}
-/* 立绘主页 header 不加雾化底（issue #53 owner 定：灰色遮罩去掉，立绘顶到面板顶；
-   #10/#11 降透明度路线到此归零）——has-hero 下连女友色光晕一并去掉，文字可读性
-   靠 text-shadow 微兜底（不加底色）；无立绘主页的光晕是唯一 header 装饰，保留 */
-.profile-panel.has-hero .profile-header { background: none; }
-/* 角色专属主题：分区卡片化——半透明浅底（无磨砂）+ 自然圆角，立绘透出不被遮挡（issue #6 跟进/owner 反馈）。
-   透明度基准：比 header 雾化层（66% bg）略透明，取 56%；磨砂 blur 会把立绘糊掉，弃用 */
-/* 卡片半透明遮罩保留（#60 owner 实拍后定：透明直排不可读，恢复 45% 底）；
-   上滑渐隐收纳（--pc2）保留，纯合成层属性 */
-html[data-theme="gf"] .profile-section {
-  background: color-mix(in srgb, var(--bg) 45%, transparent);
-  border: 1px solid var(--card-border);
-  border-radius: 18px;
-  padding: 14px 16px;
-  opacity: calc(1 - var(--pc2, 0) * 0.15);
-  transform: translateY(calc(var(--pc2, 0) * -12px)) scale(calc(1 - var(--pc2, 0) * 0.02));
-}
-html[data-theme="gf"] .profile-body { gap: 16px; }
 
 /* ═══ 输入卡（issue #74 借鉴改造）：大圆角卡片 = 输入区（上）+ 操作行（下） ═══ */
 .input-area { padding: 8px 14px 12px; gap: 8px; }

@@ -128,20 +128,7 @@
             </button>
           </div>
           <!-- 朗读音色选择（issue #73）：与「+」抽屉同形态的整行列表，二选一展开 -->
-          <div id="voice-menu" class="hidden" aria-label="朗读音色选择">
-            <button class="voice-item" type="button" data-voice="jingdiannvsheng">
-              <span class="vi-name">经典女声</span><span class="vi-desc">温柔真诚 · 默认</span>
-              <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
-            </button>
-            <button class="voice-item" type="button" data-voice="tianmeinvsheng">
-              <span class="vi-name">甜美女声</span><span class="vi-desc">软糯甜美</span>
-              <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
-            </button>
-            <button class="voice-item" type="button" data-voice="ruanmengnvsheng">
-              <span class="vi-name">软萌女声</span><span class="vi-desc">轻柔娇软</span>
-              <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
-            </button>
-          </div>
+          <div id="voice-menu" class="hidden" aria-label="朗读音色选择"><!-- 音色项由 openVoiceMenu 按当前角色性别动态渲染（issue #57） --></div>
         </div>
       </section>
     </main>

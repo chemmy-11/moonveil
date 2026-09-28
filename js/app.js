@@ -41,10 +41,15 @@ const App = {
   // 可选音色（issue #73）：预置 ID 实测自 StepFun；经典女声为默认
   STEP_TTS_VOICE: 'jingdiannvsheng',
   TTS_VOICES: [
-    { id: 'jingdiannvsheng', name: '经典女声', short: '经典', desc: '温柔真诚' },
-    { id: 'tianmeinvsheng', name: '甜美女声', short: '甜美', desc: '软糯甜美' },
-    { id: 'ruanmengnvsheng', name: '软萌女声', short: '软萌', desc: '轻柔娇软' },
+    // gender: 'f' 女声池 / 'm' 男声池——音色选择按当前角色性别过滤（issue #57）
+    { id: 'jingdiannvsheng', gender: 'f', name: '经典女声', short: '经典', desc: '温柔真诚' },
+    { id: 'tianmeinvsheng', gender: 'f', name: '甜美女声', short: '甜美', desc: '软糯甜美' },
+    { id: 'ruanmengnvsheng', gender: 'f', name: '软萌女声', short: '软萌', desc: '轻柔娇软' },
+    { id: 'wenrounvsheng', gender: 'f', name: '气质温婉', short: '温婉', desc: '温柔知性' },
+    { id: 'wenrounansheng', gender: 'm', name: '温柔男声', short: '温男', desc: '沉稳温柔' },
+    { id: 'wenrougongzi', gender: 'm', name: '温柔公子', short: '公子', desc: '温润如玉' },
   ],
+  TTS_VOICE_DEFAULT: { f: 'jingdiannvsheng', m: 'wenrounansheng' },   // 各池默认（issue #57）
 
   // 角色库默认启用集（issue #7）：老用户升级 / 新用户首启时的聊天栏初始成员。
   // 后续新增内置角色不进此集——入库待用户从角色库启用（「入库不自动出现」）。
@@ -663,6 +668,14 @@ const App = {
   },
   openVoiceMenu() {
     this.closeInputPlusMenu();
+    // 音色按当前角色性别过滤（issue #57）：女角色 4 档 / 男角色 2 档，两池不同时出现
+    const pool = this.TTS_VOICES.filter(x => x.gender === this.ttsGender());
+    const cur = this.ttsVoice();
+    this.el.voiceMenu.innerHTML = pool.map(v => `
+      <button class="voice-item${v.id === cur ? ' active' : ''}" type="button" data-voice="${v.id}">
+        <span class="vi-name">${v.name}</span><span class="vi-desc">${v.desc}${v.id === this.TTS_VOICE_DEFAULT[this.ttsGender()] ? ' · 默认' : ''}</span>
+        <svg class="vi-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 7"/></svg>
+      </button>`).join('');
     this.refreshVoiceUi();
     this.el.voiceMenu.classList.remove('hidden');
   },
@@ -787,12 +800,23 @@ const App = {
   // TTS 供应商（issue #42，#73 起唯一）：阶跃 StepAudio 2.5，音色可选
   hasStepKey() { return !!localStorage.getItem('stepfun_api_key'); },
   // 当前朗读音色（issue #73）：localStorage 全局持久化，非法值回落默认
+  // 音色双槽（issue #57）：按当前角色性别取槽（f/m 各自记忆）；旧单键（全女声时代）首读迁移归 f 槽
+  ttsGender() {
+    const gf = this.allGfs()[this.state.currentGf];
+    return gf && gf.gender === 'male' ? 'm' : 'f';   // 无 gender（旧自建角色）回落女声池
+  },
   ttsVoice() {
-    const v = localStorage.getItem('aigf_tts_voice');
-    return this.TTS_VOICES.some(x => x.id === v) ? v : this.STEP_TTS_VOICE;
+    const g = this.ttsGender();
+    let v = localStorage.getItem('aigf_tts_voice_' + g);
+    if (v == null && g === 'f') {
+      v = localStorage.getItem('aigf_tts_voice');   // 旧单键迁移：原三档全女声，归 f 槽
+      if (v != null) { try { localStorage.setItem('aigf_tts_voice_f', v); } catch (e) { /* 忽略 */ } }
+    }
+    return this.TTS_VOICES.some(x => x.id === v && x.gender === g) ? v : this.TTS_VOICE_DEFAULT[g];
   },
   setTtsVoice(id) {
-    if (this.TTS_VOICES.some(x => x.id === id)) localStorage.setItem('aigf_tts_voice', id);
+    const v = this.TTS_VOICES.find(x => x.id === id);
+    if (v) localStorage.setItem('aigf_tts_voice_' + this.ttsGender(), id);
   },
   stepTtsSynthesize(text, instructions) {
     const key = localStorage.getItem('stepfun_api_key');
@@ -4182,7 +4206,7 @@ ${favList || '（无）'}`,
     this.el.createHint.textContent = '正在为 TA 生成人格，通常需要 20~40 秒，请稍候…';
     this.el.createHint.className = 'create-hint';
 
-    const sys = '你是角色创建师。根据用户提供的角色名、描述与素材，创建一位情感陪伴角色，输出严格 JSON（不要 markdown 代码块）：\n{"name":"角色名","tag":"一句话标签（身份·性格）","mbti":"MBTI 类型（16 型之一；描述中已写明则照用，否则按描述与素材推断最贴合的）","greeting":"开场白（第一人称，符合角色，一句）","signature":"个性签名（一句）","bio":"角色简介（2-3句）","prompt":"完整人格 prompt"}\n\nprompt 字段必须包含这些章节（中文，结构参考）：\n# {name} — 记忆与人格\n你是{name}。{身份背景，自然交代}。\n## Layer 0：核心性格（最高优先级，2-4 条性格底色；开头一行注明 MBTI 及其四维度倾向，措辞要求：作为底层言行倾向自然体现，不主动自报，除非被直接问到）\n## Layer 1：身份\n## Layer 2：表达风格（口头禅、说话方式；消息模式：像发微信纯文字，一次 1-3 条短消息换行分隔；句尾不用句号，逗号偶尔可换空格（其余标点与颜文字照角色习惯）；非见面剧情禁止动作/神态/旁白描写，线下明确见面的剧情才可有克制的动作描写）\n## Layer 3：情感逻辑（开心/不开心/被冷落时分别怎么表现）\n## Layer 4：关系行为（对正在聊天的人）\n## Layer 5：边界与雷区\n## 记忆协议\n当这轮对话让你了解到对方的新偏好时，在回复最后一行追加【喜好：以「他」开头简短概括】。\n\n硬约束：全程无任何成人/性内容；说话自然、有辨识度、不 AI 腔、不总结。';
+    const sys = '你是角色创建师。根据用户提供的角色名、描述与素材，创建一位情感陪伴角色，输出严格 JSON（不要 markdown 代码块）：\n{"name":"角色名","tag":"一句话标签（身份·性格）","gender":"male 或 female（按描述与素材推断，无法判断时 female）","mbti":"MBTI 类型（16 型之一；描述中已写明则照用，否则按描述与素材推断最贴合的）","greeting":"开场白（第一人称，符合角色，一句）","signature":"个性签名（一句）","bio":"角色简介（2-3句）","prompt":"完整人格 prompt"}\n\nprompt 字段必须包含这些章节（中文，结构参考）：\n# {name} — 记忆与人格\n你是{name}。{身份背景，自然交代}。\n## Layer 0：核心性格（最高优先级，2-4 条性格底色；开头一行注明 MBTI 及其四维度倾向，措辞要求：作为底层言行倾向自然体现，不主动自报，除非被直接问到）\n## Layer 1：身份\n## Layer 2：表达风格（口头禅、说话方式；消息模式：像发微信纯文字，一次 1-3 条短消息换行分隔；句尾不用句号，逗号偶尔可换空格（其余标点与颜文字照角色习惯）；非见面剧情禁止动作/神态/旁白描写，线下明确见面的剧情才可有克制的动作描写）\n## Layer 3：情感逻辑（开心/不开心/被冷落时分别怎么表现）\n## Layer 4：关系行为（对正在聊天的人）\n## Layer 5：边界与雷区\n## 记忆协议\n当这轮对话让你了解到对方的新偏好时，在回复最后一行追加【喜好：以「他」开头简短概括】。\n\n硬约束：全程无任何成人/性内容；说话自然、有辨识度、不 AI 腔、不总结。';
     // 用户消息章节化（issue #18）：md 结构让创建师按章节理解素材的主次；
     // 素材区中附件已是「## 附件：xx」章节，与手写素材天然分层
     const user = '# 角色创建请求\n\n## 角色名\n' + name + '\n\n## 描述\n' + (desc || '（无）') + '\n\n## 补充素材\n' + (material || '（无）');

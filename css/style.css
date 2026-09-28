@@ -221,6 +221,9 @@ html[data-theme="black"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, 
 }
 
 /* ─── 顶栏 ─── */
+/* 主页打开时隐藏聊天区顶栏（issue #55）：panel 状态栏避让让出的顶部区域透出 top-bar
+   形成灰色长条——visibility 不触发重排，closeProfile 移除 class 即恢复 */
+body.profile-open #top-bar { visibility: hidden; }
 #top-bar {
   height: var(--topbar-h);
   flex: none;

@@ -221,3 +221,58 @@ html[data-theme="gf"] body[data-gf="tangtang"] {
   --input-bg: rgba(255, 251, 246, .78);
   --danger: #C9947A;
 }
+/* ─── 季萤：雾蓝系（issue #34：#72 时 gf 专属块只建了晚晚/唐苓，后续角色漏配——
+       落兜底中性灰紫致玩家气泡/发送键发灰、输入卡透明度不一致。以下四块同构补齐，
+       十 token 结构对齐上两块；渐变/深字色与 style.css 基础色板同源；
+       透明度锚 .78 级（对齐晚晚/唐苓输入卡） ─── */
+html[data-theme="gf"] body[data-gf="jiying"] {
+  --player-grad: linear-gradient(135deg, #A8BCD8, #8FA8C9);
+  --on-player: #2F3B52;
+  --player-shadow: 0 3px 14px rgba(143, 168, 201, .36);
+  --bubble-gf: rgba(250, 252, 255, .86);
+  --bubble-gf-border: rgba(143, 168, 201, .3);
+  --card-bg: rgba(250, 252, 255, .68);
+  --card-border: rgba(255, 255, 255, .82);
+  --bg-soft: rgba(248, 250, 254, .6);
+  --input-bg: rgba(249, 251, 255, .78);
+  --danger: #8F9DBA;
+}
+/* ─── 欧阳越：雾青系（issue #34 同构补齐） ─── */
+html[data-theme="gf"] body[data-gf="ouyangyue"] {
+  --player-grad: linear-gradient(135deg, #9CB7C0, #7C9DA8);
+  --on-player: #2B3E46;
+  --player-shadow: 0 3px 14px rgba(124, 157, 168, .36);
+  --bubble-gf: rgba(249, 253, 254, .86);
+  --bubble-gf-border: rgba(124, 157, 168, .3);
+  --card-bg: rgba(249, 253, 254, .68);
+  --card-border: rgba(255, 255, 255, .82);
+  --bg-soft: rgba(246, 252, 253, .6);
+  --input-bg: rgba(248, 252, 253, .78);
+  --danger: #7FA3A8;
+}
+/* ─── 江野：赭棕系（issue #34 同构补齐） ─── */
+html[data-theme="gf"] body[data-gf="jiangye"] {
+  --player-grad: linear-gradient(135deg, #C8A684, #B08968);
+  --on-player: #46332A;
+  --player-shadow: 0 3px 14px rgba(176, 137, 104, .36);
+  --bubble-gf: rgba(255, 252, 248, .86);
+  --bubble-gf-border: rgba(176, 137, 104, .32);
+  --card-bg: rgba(255, 252, 248, .68);
+  --card-border: rgba(255, 255, 255, .82);
+  --bg-soft: rgba(255, 250, 242, .6);
+  --input-bg: rgba(255, 251, 246, .78);
+  --danger: #BC8A6E;
+}
+/* ─── 林乐：芥末黄系（issue #34 同构补齐） ─── */
+html[data-theme="gf"] body[data-gf="linle"] {
+  --player-grad: linear-gradient(135deg, #E0C375, #CFA84C);
+  --on-player: #4A3D1E;
+  --player-shadow: 0 3px 14px rgba(207, 168, 76, .36);
+  --bubble-gf: rgba(255, 253, 246, .86);
+  --bubble-gf-border: rgba(207, 168, 76, .34);
+  --card-bg: rgba(255, 253, 246, .68);
+  --card-border: rgba(255, 255, 255, .82);
+  --bg-soft: rgba(255, 251, 240, .6);
+  --input-bg: rgba(255, 252, 244, .78);
+  --danger: #C29B58;
+}

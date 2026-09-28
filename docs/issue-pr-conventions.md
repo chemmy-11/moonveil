@@ -120,6 +120,7 @@
 - [ ] `js/data.js` 角色对象字段齐全：id/name/tag/mbti/color/avatar/status/greeting/quickEmoji/profile(signature/basic/bio/cards)/prompt；prompt 含 PART A / PART B / Layer 0 结构与全年龄硬约束（CI ② 断言）
 - [ ] prompt 记忆协议的【喜好】人称与角色性别一致（女性角色「她」、男性角色「他」）
 - [ ] `css/style.css` 补 `body[data-gf="<id>"]` 主题色块（--gf-color-base/soft/grad/on-gf 四件套；与既有角色色拉开区分）
+- [ ] **`css/tokens.css` 补 gf「角色专属」主题块**（issue #34 教训：`html[data-theme="gf"] body[data-gf="<id>"]` 十 token——player-grad/on-player/player-shadow/bubble-gf/bubble-gf-border/card-bg/card-border/bg-soft/input-bg/danger，透明度对齐既有角色锚值；缺此块则 gf 主题下该角色落兜底中性灰紫，玩家气泡/发送键发灰、输入卡透明度不一致。#72 只建了晚晚/唐苓，季萤与三男均漏）
 - [ ] 头像 `assets/<id>.webp` 入库 + `scripts/build.sh` md5 清单补录
 - [ ] **默认启用策略**：新角色**不进** `DEFAULT_ENABLED_IDS`（app.js）——入库待用户从角色库启用；只有「首发内置」才在默认集
 - [ ] CI 角色数断言同步：ci.yml 角色完整性（`ids.length`）与 personas 引用数（`refs.length`）两处硬编码

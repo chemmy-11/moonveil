@@ -1,6 +1,6 @@
 # 月见 Issue / PR 提报规范
 
-> 最后更新：2026-09-26（纠偏 §3.4 主题名至现行四主题；§5.3 增补移动端 E2E 方法论）· 适用主仓库 `chemmy-11/moonveil`
+> 最后更新：2026-09-28（§一 基线表对齐策略反转现行，新增发版权限语义）· 适用主仓库 `chemmy-11/moonveil`
 >
 > 定位：月见是小团队协作项目（owner + 开发组成员 + 多个 AI agent 会话），本文规范「人 / AI agent」两类提交者的 Issue 与 PR 行为，与 `docs/roadmap.md`（里程碑与方向）、`docs/collab-onboarding.md`（新成员入门）、README（项目定位）互补：**roadmap 记方向，issue 记可执行事项，PR 记落地过程**。
 
@@ -8,13 +8,12 @@
 
 | 仓库 / 分支 | 可见性 | 角色 | 规则 |
 |---|---|---|---|
-| `moonveil` · `main` | 公开 | 开发主线（公开版人设） | 所有提交、issue、PR 都在这里 |
-| `moonveil-updates` · `master` | 公开 | OTA 发布仓（latest.json + APK） | 仅发版脚本写入 |
-| `moonveil` | 公开 | 已迁移的公开展示仓 | 冻结在 d12339b，除非用户明确说明，不推送 |
-| `moonveil-updates` | 公开 | OTA 发布仓（APK + latest.json） | 仅随发版流程更新 |
+| `moonveil` · `main` | 公开 | 开发主线（公开版人设） | 所有开发、issue、PR 都在这里 |
+| `moonveil-updates-public` · `master` | 公开 | 本仓 OTA 发布仓 | 仅发版流程写入（APK + latest.json，只留当前版） |
 
-- **推送时机**：本地提交是常态，`git push`、合并到远程前需用户明确指令。
-- 默认分支为 `main`；一切 PR 的 base 都是 `main`。
+- 私有侧（`moonveil-archive` 历史存档、`moonveil-updates` 私有版 OTA）不属于本仓日常体系：默认不推不动、不发版。
+- **发版权限**：版本号变更、GitHub Release、OTA 推送由 owner 触发/授权；AI 协作者日常开发不主动发版，适合打包的内容列入「待 owner 事项」。
+- 默认分支为 `main`；一切 PR 的 base 都是 `main`；force push 与改写历史禁止。
 
 ## 二、Issue 规范
 

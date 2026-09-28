@@ -4371,6 +4371,9 @@ ${favList || '（无）'}`,
     if (!body) return;
     const p = Math.min(1, Math.max(0, body.scrollTop / 110));
     this.el.profilePanel.style.setProperty('--pc', p.toFixed(3));
+    // 次段进度 --pc2（issue #60）：header 收满后继续上滑 260px 区间 → 分区卡渐隐收纳
+    const p2 = Math.min(1, Math.max(0, (body.scrollTop - 110) / 260));
+    this.el.profilePanel.style.setProperty('--pc2', p2.toFixed(3));
   },
   // Android 返回手势/按键（issue #95）：按关闭优先级栈逐层关浮层，一次返回关一层；
   // 无浮层时沿用 Android 惯例——历史可退则退，否则退出 App（不改退出语义）。
@@ -4416,6 +4419,7 @@ ${favList || '（无）'}`,
     this.el.profilePanel.classList.toggle('has-hero', showHero);
     this.el.profilePanel.style.backgroundImage = showHero ? `url("${pack.hero}")` : '';
     this.el.profilePanel.style.setProperty('--pc', 0);   // 收起状态复位（issue #85）
+    this.el.profilePanel.style.setProperty('--pc2', 0);   // 分区卡收纳复位（issue #60）
     this.el.profileBody.scrollTop = 0;
     this.el.profileAvatar.src = gf.avatar;
     this.el.profileName.textContent = gf.name;

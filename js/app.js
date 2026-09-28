@@ -4388,6 +4388,7 @@ ${favList || '（无）'}`,
     // issue #99 阶段一：门控走通用注册表，自建角色的 visual 字段同样生效
     const pack = this.getVisualPack(this.state.currentGf);
     const showHero = document.documentElement.getAttribute('data-theme') === 'gf' && !!(pack && pack.hero);
+    document.body.classList.add('profile-open');   // #55：主页打开时隐藏聊天区 top-bar（防状态栏区透出灰条）
     this.el.profilePanel.classList.toggle('has-hero', showHero);
     this.el.profilePanel.style.backgroundImage = showHero ? `url("${pack.hero}")` : '';
     this.el.profilePanel.style.setProperty('--pc', 0);   // 收起状态复位（issue #85）
@@ -4507,6 +4508,7 @@ ${favList || '（无）'}`,
     this.el.profileOverlay.classList.remove('hidden');
   },
   closeProfile() {
+    document.body.classList.remove('profile-open');   // #55：恢复聊天区 top-bar
     this.el.profilePanel.classList.add('hidden');
     this.el.profileOverlay.classList.add('hidden');
     this.el.profilePanel.classList.remove('has-hero');   // 立绘背景随关闭清除（issue #69）

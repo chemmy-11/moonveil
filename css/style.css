@@ -2136,23 +2136,13 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
 .profile-panel.has-hero .profile-header { background: none; }
 /* 角色专属主题：分区卡片化——半透明浅底（无磨砂）+ 自然圆角，立绘透出不被遮挡（issue #6 跟进/owner 反馈）。
    透明度基准：比 header 雾化层（66% bg）略透明，取 56%；磨砂 blur 会把立绘糊掉，弃用 */
+/* 卡片半透明遮罩保留（#60 owner 实拍后定：透明直排不可读，恢复 45% 底）；
+   上滑渐隐收纳（--pc2）保留，纯合成层属性 */
 html[data-theme="gf"] .profile-section {
-  background: none;                  /* #60：大片半透明遮罩去到底——卡片透明直排立绘上 */
-  border: none;
+  background: color-mix(in srgb, var(--bg) 45%, transparent);
+  border: 1px solid var(--card-border);
   border-radius: 18px;
   padding: 14px 16px;
-}
-/* #60：卡片无底后，卡内文字 text-shadow 兜底可读（不加回任何底色） */
-html[data-theme="gf"] .profile-section .profile-section-title,
-html[data-theme="gf"] .profile-section .pm-text,
-html[data-theme="gf"] .profile-section .pm-date,
-html[data-theme="gf"] .profile-section .pf-chip,
-html[data-theme="gf"] .profile-section .profile-placeholder,
-html[data-theme="gf"] .profile-section .profile-bio {
-  text-shadow: 0 1px 3px color-mix(in srgb, var(--bg) 72%, transparent), 0 0 10px color-mix(in srgb, var(--bg) 45%, transparent);
-}
-/* #60：分区卡上滑渐隐收纳——--pc2 次段进度驱动，纯合成层属性 */
-html[data-theme="gf"] .profile-section {
   opacity: calc(1 - var(--pc2, 0) * 0.15);
   transform: translateY(calc(var(--pc2, 0) * -12px)) scale(calc(1 - var(--pc2, 0) * 0.02));
 }

@@ -304,10 +304,11 @@ const App = {
   // ⚠ 双源设计（2026-09-03 教训）：raw.githubusercontent.com 的 Fastly 边缘缓存 max-age=300
   // 且缓存键忽略 query（cache-busting 无效），发版后 5 分钟内手机可能读到旧 latest.json 误判
   // 「已是最新」——先走 api.github.com contents API（不走 raw 缓存、基本实时），失败回退 raw 源。
-  checkUpdate() {
-    const btn = document.getElementById('sb-update');
-    btn.disabled = true;
-    btn.style.opacity = '.55';
+  // 双源拉取 latest.json（手动/自动检查共用，issue #26 抽取）
+  // ⚠ 双源设计（2026-09-03 教训）：raw.githubusercontent.com 的 Fastly 边缘缓存 max-age=300
+  // 且缓存键忽略 query（cache-busting 无效），发版后 5 分钟内手机可能读到旧 latest.json 误判
+  // 「已是最新」——先走 api.github.com contents API（不走 raw 缓存、基本实时），失败回退 raw 源。
+  async fetchLatestMeta() {
     const RAW_URL = 'https://raw.githubusercontent.com/chemmy-11/moonveil-updates-public/master/latest.json';
     const API_URL = 'https://api.github.com/repos/chemmy-11/moonveil-updates-public/contents/latest.json';
     const controller = new AbortController();
@@ -321,35 +322,46 @@ const App = {
       if (!resp.ok) throw new Error('HTTP ' + resp.status);
       return resp.json();
     };
-    // API 源 6s 快速失败回退 raw 源（共享同一个总超时 controller）
-    const run = async () => {
-      let meta;
+    try {
+      // API 源 6s 快速失败回退 raw 源（共享同一个总超时 controller）
       try {
-        meta = await Promise.race([
+        return await Promise.race([
           fetchJson(API_URL),
           new Promise((_, rej) => setTimeout(() => rej(new Error('api timeout')), 6000)),
         ]);
       } catch (e1) {
-        meta = await fetchJson(RAW_URL);
+        return await fetchJson(RAW_URL);
       }
-      const latest = String(meta.version || '').replace(/^v/i, '');
-      const cur = String(APP_VERSION || '1.0.0');
-      if (!latest || this.compareVersions(latest, cur) <= 0) {
-        this.toast('已是最新版本 v' + cur);
-        return;
-      }
-      // 有新版 → 弹窗（更新说明截取前几行）
-      const notes = String(meta.notes || '').trim().split('\n').slice(0, 6).join('\n');
-      this.el.updateDesc.textContent =
-        '当前版本 v' + cur + '，发现新版本 v' + latest + '。' +
-        (notes ? '\n\n' + notes : '');
-      this.el.updateDownloadBtn.dataset.url = meta.apk_url || '';
-      this.el.updateDownloadBtn.dataset.version = latest;
-      this.el.updateProgress.classList.add('hidden');   // 重置上次的下载进度
-      this.el.updateOverlay.classList.remove('hidden');
-      this.el.updateModal.classList.remove('hidden');
-    };
-    run()
+    } finally {
+      clearTimeout(timeout);
+    }
+  },
+  // 更新弹窗填充与打开（手动/自动共用，issue #26 抽取）
+  showUpdateModal(latest, meta) {
+    const notes = String((meta && meta.notes) || '').trim().split('\n').slice(0, 6).join('\n');
+    this.el.updateDesc.textContent =
+      '当前版本 v' + String(APP_VERSION || '1.0.0') + '，发现新版本 v' + latest + '。' +
+      (notes ? '\n\n' + notes : '');
+    this.el.updateDownloadBtn.dataset.url = (meta && meta.apk_url) || '';
+    this.el.updateDownloadBtn.dataset.version = latest;
+    this.el.updateProgress.classList.add('hidden');   // 重置上次的下载进度
+    this.el.updateOverlay.classList.remove('hidden');
+    this.el.updateModal.classList.remove('hidden');
+  },
+  checkUpdate() {
+    const btn = document.getElementById('sb-update');
+    btn.disabled = true;
+    btn.style.opacity = '.55';
+    this.fetchLatestMeta()
+      .then((meta) => {
+        const latest = String(meta.version || '').replace(/^v/i, '');
+        const cur = String(APP_VERSION || '1.0.0');
+        if (!latest || this.compareVersions(latest, cur) <= 0) {
+          this.toast('已是最新版本 v' + cur);
+          return;
+        }
+        this.showUpdateModal(latest, meta);
+      })
       .catch((e) => {
         console.error('[checkUpdate]', e);
         this.toast(e.name === 'AbortError'
@@ -357,10 +369,39 @@ const App = {
           : '检查更新失败，请稍后再试');
       })
       .finally(() => {
-        clearTimeout(timeout);
         btn.disabled = false;
         btn.style.opacity = '';
       });
+  },
+  // ═══ 自动检查更新（issue #26）═══
+  // 启动 10s 后一次（避让首屏）+ 长存会话每小时探测、距上次检查 ≥24h 才真查
+  // （localStorage 记时刻，防匿名 API 限流）；每次会话至多提示一次。
+  // 无新版/失败全程静默零打扰；有新版出可点击轻提示 → 点进既有更新弹窗。
+  AUTO_UPDATE_DELAY: 10e3,
+  AUTO_UPDATE_INTERVAL: 24 * 3600e3,
+  scheduleAutoUpdate() {
+    setTimeout(() => this.autoCheckUpdate(true), this.AUTO_UPDATE_DELAY);
+    setInterval(() => this.autoCheckUpdate(false), 3600e3);
+  },
+  async autoCheckUpdate(isStartup) {
+    if (this.state.autoUpdateNotified) return;   // 每会话至多提示一次
+    if (!isStartup) {
+      const last = Number(localStorage.getItem('aigf_last_update_check') || 0);
+      if (Date.now() - last < this.AUTO_UPDATE_INTERVAL) return;   // 24h 节流
+    }
+    localStorage.setItem('aigf_last_update_check', String(Date.now()));
+    let meta;
+    try {
+      meta = await this.fetchLatestMeta();
+    } catch (e) {
+      console.warn('[autoCheckUpdate] 静默失败:', e.message || e);   // 无网/限流/超时：零打扰
+      return;
+    }
+    const latest = String(meta.version || '').replace(/^v/i, '');
+    const cur = String(APP_VERSION || '1.0.0');
+    if (!latest || this.compareVersions(latest, cur) <= 0) return;   // 无新版：零打扰
+    this.state.autoUpdateNotified = true;
+    this.toast('发现新版本 v' + latest + '，点此查看', () => this.showUpdateModal(latest, meta));
   },
   compareVersions(a, b) {
     const pa = String(a).split('.').map(Number);
@@ -4367,12 +4408,18 @@ ${favList || '（无）'}`,
   },
 
   // ═══ Toast ═══
-  toast(msg) {
+  toast(msg, onClick) {
     const t = this.el.toast;
     t.textContent = msg;
     t.classList.remove('hidden');
+    t.classList.toggle('toast-action', !!onClick);   // 可点击形态（issue #26：更新提示点进弹窗）
+    if (onClick) {
+      t.onclick = () => { this.toast(); onClick(); };   // 先收起再执行动作
+    } else if (t.onclick) {
+      t.onclick = null;
+    }
     clearTimeout(this._toastTimer);
-    this._toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
+    this._toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('toast-action'); }, onClick ? 4200 : 2200);
   },
 
   // ═══ 菜单面板 ═══
@@ -4652,6 +4699,8 @@ ${favList || '（无）'}`,
     // 主动消息心跳（issue #27 期一）：每分钟节律检查 + 回前台立即补检（错过窗口不补发）
     setInterval(() => this.proactiveCheck(), 60e3);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) this.proactiveCheck(); });
+    // 自动检查更新（issue #26）：启动 10s 一次 + 24h 节流，每会话至多提示一次
+    this.scheduleAutoUpdate();
     this.el.fontOptions.addEventListener('click', (e) => {
       const btn = e.target.closest('.font-option');
       if (btn) this.setFont(btn.dataset.fontKey);

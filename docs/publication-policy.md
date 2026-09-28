@@ -24,7 +24,7 @@
 ## 三、发版与更新源（现行流程）
 
 - **版本同步**：一条命令 `bash scripts/bump-version.sh [版本号]`（`js/version.js` 唯一源头 → build.sh 注入 index.html `?v=` → `build.gradle` versionName/versionCode；versionCode 规则 v2 = `(major+1)×10000 + minor×100 + patch`，严格递增——OTA 依赖）。
-- **发版权限**：由 owner 触发/授权；AI 协作者日常开发不主动发版（版本字段、Release、OTA 均不擅动），适合打包的内容列入「待 owner 事项」。
+- **发版权限**：发版（版本号 bump、GitHub Release、OTA 推送）由「收敛发版与文档」自动化在收敛检查与回归测试全绿后自动执行（owner 2026-09-29 授权）；其余 AI 协作者与交互会话不改版本字段、不发版，适合打包的内容列入「待 owner 事项」或等下一轮自动发版。
 - **发版动作**（owner 授权后执行）：tag `vX.Y.Z` + GitHub Release（标题就是 `vX.Y.Z`，不带「公开发布」等后缀；APK 附件与 OTA 同一构建）→ 推 `moonveil-updates-public`（APK 文件名带版本 `AI-GF-<版本>.apk` + latest.json 的 `apk_url` 指向该文件名 + 删旧包，更新仓只留当前版 + latest.json）。
 - **发版自查**：解包 APK 复查第二节内容边界；latest.json notes 控制在 6 行内（App 弹窗只截前 6 行）；raw CDN 有缓存延迟，验证以 api.github.com 主源为准。
 - 本仓 `js/app.js` 的更新源 URL 恒为 `moonveil-updates-public`（`RAW_URL` / `API_URL`）——任何触碰更新源相关代码的 PR 核对这一点。

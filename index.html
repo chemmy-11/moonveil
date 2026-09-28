@@ -182,10 +182,12 @@
       <label class="modal-field-label" for="api-key-input">DeepSeek API Key<a class="key-link" href="https://platform.deepseek.com/">去开放平台获取 ↗</a></label>
       <input type="text" id="api-key-input" placeholder="sk-..." autocomplete="off" spellcheck="false" style="-webkit-text-security: disc;">
       <div class="api-custom-head">
-        <span class="api-custom-label">自定义供应商（OpenAI 兼容）</span>
-        <button class="lib-toggle" id="custom-llm-toggle" role="switch" aria-checked="false" aria-label="使用自定义供应商" tabindex="0"></button>
+        <span class="api-custom-label">供应商（点击切换对话通道）</span>
       </div>
-      <div id="custom-llm-form">
+      <div id="provider-list"></div>
+      <button class="btn secondary" id="provider-add" style="width:100%">+ 添加供应商（OpenAI 兼容）</button>
+      <div id="custom-llm-form" class="hidden">
+        <p class="api-hint" id="provider-form-title" style="margin:10px 0 0"></p>
         <label class="api-field-label" for="custom-llm-name">备注名称（可选）</label>
         <input type="text" id="custom-llm-name" placeholder="如：公司网关 / OpenRouter" autocomplete="off" spellcheck="false">
         <label class="api-field-label" for="custom-llm-base">Base URL</label>
@@ -196,8 +198,9 @@
         <input type="text" id="custom-llm-model" placeholder="如 deepseek-chat / qwen-plus / gpt-4o-mini" autocomplete="off" spellcheck="false">
         <div class="api-custom-actions">
           <button class="btn secondary" id="custom-llm-test">测试连接</button>
+          <button class="btn danger provider-del hidden" id="provider-del">删除该供应商</button>
         </div>
-        <p class="api-hint">深度思考（thinking）为扩展参数：DeepSeek 官方通道开 = enabled + effort high、关 = disabled；自定义供应商开 = 发送 thinking + effort high（网关不认未知字段时可能报错，可先「测试连接」验证）、关 = 不发送（最兼容）。</p>
+        <p class="api-hint">深度思考（thinking）为扩展参数：DeepSeek 官方通道开 = enabled + effort high、关 = disabled；自定义供应商开 = 发送 thinking + effort high（网关不认未知字段时可能报错，可先「测试连接」验证）、关 = 不发送（最兼容）。填好后记得点底部「保存」。</p>
       </div>
     </section>
     <section class="api-section">

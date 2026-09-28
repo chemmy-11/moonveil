@@ -54,13 +54,10 @@ App.el.thinkPill = {
 };
 App.el.toast = { textContent: '', classList: { add() {}, remove() {}, toggle() {} } };
 
+// 多槽存储模型（issue #50 落地后）：active 槽 id 控制通道
 const setCustom = (on) => {
-  if (on) {
-    localStorage.setItem('aigf_custom_llm', JSON.stringify({ name: '测试网关', baseUrl: 'https://gw.example.com/v1', apiKey: 'gw-key', model: 'some-model' }));
-    localStorage.setItem('aigf_use_custom_llm', '1');
-  } else {
-    localStorage.setItem('aigf_use_custom_llm', '0');
-  }
+  localStorage.setItem('aigf_custom_llms', JSON.stringify([{ id: 't1', seq: 1, name: '测试网关', baseUrl: 'https://gw.example.com/v1', apiKey: 'gw-key', model: 'some-model' }]));
+  localStorage.setItem('aigf_custom_llm_active', on ? 't1' : '');
 };
 const setThinking = (on) => localStorage.setItem('aigf_deep_thinking', on ? '1' : '0');
 const runCall = async () => {

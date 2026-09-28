@@ -152,7 +152,10 @@ const App = {
       apiKeyInput: document.getElementById('api-key-input'),
       apiSaveBtn: document.getElementById('api-save-btn'),
       apiBackBtn: document.getElementById('api-back-btn'),
-      customLlmToggle: document.getElementById('custom-llm-toggle'),
+      providerList: document.getElementById('provider-list'),
+      providerAdd: document.getElementById('provider-add'),
+      providerDel: document.getElementById('provider-del'),
+      providerFormTitle: document.getElementById('provider-form-title'),
       customLlmForm: document.getElementById('custom-llm-form'),
       customLlmName: document.getElementById('custom-llm-name'),
       customLlmBase: document.getElementById('custom-llm-base'),
@@ -3699,15 +3702,63 @@ ${favList || '（无）'}`,
     if (!key) this.openApiPanel();
     this.updateApiStatus();
   },
-  // -- 自定义 LLM 供应商（issue #18）：OpenAI 兼容接口（Base URL + Key + Model）--
-  // 存储：aigf_custom_llm = JSON{ name, baseUrl, apiKey, model }，aigf_use_custom_llm = '1'/'0'
+  // -- 自定义 LLM 供应商 · 多槽（issue #50）：与 DeepSeek 同级的供应商列表 --
+  // 存储：aigf_custom_llms = JSON 数组 [{ id, name, baseUrl, apiKey, model }]（id 稳定生成，
+  // 缺省名「自定义供应商 N」按数组序号展示，删除中间槽名字自然前移）；
+  // aigf_custom_llm_active = 生效槽 id（空 = DeepSeek 官方）。旧单槽键首启迁移（见 migrateCustomLlms）。
   // 均只存 localStorage，与现有 key 策略一致（不进仓、不进存档导出）
+  CUSTOM_LLMS_KEY: 'aigf_custom_llms',
+  CUSTOM_ACTIVE_KEY: 'aigf_custom_llm_active',
+  // 旧单槽 → 多槽一次性迁移（issue #50）：旧 aigf_custom_llm 读入为第一个槽，
+  // 旧开关 aigf_use_custom_llm==='1' 则 active 指向它；旧键清掉
+  migrateCustomLlms() {
+    if (localStorage.getItem(this.CUSTOM_LLMS_KEY) !== null) return;
+    let old = null;
+    try { old = JSON.parse(localStorage.getItem('aigf_custom_llm') || 'null'); } catch (e) { /* 损坏当无 */ }
+    const arr = [];
+    let active = '';
+    if (old && old.baseUrl && old.apiKey && old.model) {
+      const id = this.genProviderId();
+      arr.push({ id, seq: 1, name: old.name || '', baseUrl: old.baseUrl, apiKey: old.apiKey, model: old.model });
+      if (localStorage.getItem('aigf_use_custom_llm') === '1') active = id;
+    }
+    try {
+      localStorage.setItem(this.CUSTOM_LLMS_KEY, JSON.stringify(arr));
+      localStorage.setItem(this.CUSTOM_ACTIVE_KEY, active);
+    } catch (e) { /* 忽略 */ }
+    localStorage.removeItem('aigf_custom_llm');
+    localStorage.removeItem('aigf_use_custom_llm');
+  },
+  genProviderId() { return 'llm-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6); },
+  loadCustomLlms() {
+    this.migrateCustomLlms();
+    try {
+      const arr = JSON.parse(localStorage.getItem(this.CUSTOM_LLMS_KEY) || '[]');
+      return Array.isArray(arr) ? arr.filter(s => s && s.id && s.baseUrl && s.apiKey && s.model) : [];
+    } catch (e) { return []; }
+  },
+  saveCustomLlms(arr) {
+    try { localStorage.setItem(this.CUSTOM_LLMS_KEY, JSON.stringify(arr)); } catch (e) { /* 忽略 */ }
+  },
+  customActiveId() { return localStorage.getItem(this.CUSTOM_ACTIVE_KEY) || ''; },
+  // 语义（issue #50 改造）：生效槽存在即自定义通道
   useCustomLlm() {
-    return localStorage.getItem('aigf_use_custom_llm') === '1';
+    const id = this.customActiveId();
+    return !!id && this.loadCustomLlms().some(s => s.id === id);
   },
   customLlmCfg() {
-    try { return JSON.parse(localStorage.getItem('aigf_custom_llm') || '{}'); }
-    catch (e) { return {}; }
+    const id = this.customActiveId();
+    const slot = this.loadCustomLlms().find(s => s.id === id);
+    return slot ? { name: slot.name, baseUrl: slot.baseUrl, apiKey: slot.apiKey, model: slot.model } : {};
+  },
+  // 槽显示名：备注名缺省「自定义供应商 N」。N = 创建时分配的稳定 seq（issue #50：
+  // 删除中间槽不打乱后续名字——序号与 id/位置解耦）；极旧数据无 seq 时按位置兜底
+  providerLabel(slot, idx) { return slot.name || '自定义供应商 ' + (slot.seq || (typeof idx === 'number' ? idx + 1 : 1)); },
+  activeProviderName() {
+    const id = this.customActiveId();
+    const arr = this.loadCustomLlms();
+    const idx = arr.findIndex(s => s.id === id);
+    return idx >= 0 ? this.providerLabel(arr[idx], idx) : '';
   },
   // URL 规范化（issue #18）：根 / 带 /v1 / 带全路径三种填法归一为 <base>/v1/chat/completions，不重复拼接
   normalizeChatUrl(base) {
@@ -3725,30 +3776,84 @@ ${favList || '（无）'}`,
       model: this.el.customLlmModel.value.trim(),
     };
   },
-  refreshCustomLlmUi() {
-    const on = this.useCustomLlm();
-    this.el.customLlmToggle.classList.toggle('on', on);
-    this.el.customLlmToggle.setAttribute('aria-checked', on ? 'true' : 'false');
-    this.el.customLlmForm.classList.toggle('off', !on);   // 关态仅视觉弱化，保持可编辑（issue #39：off 只读会与「先填再启用」死锁）
+  // 供应商列表渲染（issue #50）：DeepSeek（内置）+ 各自定义槽；点击行切换生效，点「编辑」开表单
+  renderProviders() {
+    const box = this.el.providerList;
+    if (!box) return;
+    const active = this.customActiveId();
+    const arr = this.loadCustomLlms();
+    const row = (id, label, sub, isActive) => `
+      <div class="provider-row${isActive ? ' active' : ''}" data-id="${this.esc(id)}">
+        <span class="provider-radio${isActive ? ' on' : ''}"></span>
+        <span class="provider-name">${this.esc(label)}<span class="provider-sub">${this.esc(sub)}</span></span>
+        ${id ? `<button class="provider-edit" data-edit="${this.esc(id)}" title="编辑该供应商">编辑</button>` : ''}
+      </div>`;
+    box.innerHTML = row('', 'DeepSeek', '（内置）', !active) +
+      arr.map((s, i) => row(s.id, this.providerLabel(s, i), s.model || '', active === s.id)).join('');
   },
-  toggleCustomLlm() {
-    const on = !this.useCustomLlm();
-    if (on) {
-      const c = this.readCustomLlmForm();
-      if (!c.baseUrl || !c.apiKey || !c.model) {
-        this.toast('先填写 Base URL、API Key 和 Model ID 再启用');
-        // 聚焦第一个空框引导填写（issue #39：只 toast 不聚焦，用户不知道从哪补）
-        const firstEmpty = [['custom-llm-base', c.baseUrl], ['custom-llm-key', c.apiKey], ['custom-llm-model', c.model]].find(([, v]) => !v);
-        const el = firstEmpty && document.getElementById(firstEmpty[0]);
-        if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
-        return;
-      }
+  // 编辑态：null = 收起；'new' = 新增空白；slot id = 编辑既有槽
+  refreshCustomLlmUi() {
+    this.renderProviders();
+    const editing = this.state.editingProvider || null;
+    this.el.customLlmForm.classList.toggle('hidden', !editing);
+    const del = this.el.providerDel;
+    if (del) del.classList.toggle('hidden', editing === 'new' || !editing);
+    if (this.el.providerFormTitle) {
+      this.el.providerFormTitle.textContent = editing === 'new' ? '新供应商（填好后点底部「保存」入列表）'
+        : editing ? '编辑：' + this.activeOrEditingLabel(editing) : '';
     }
-    try { localStorage.setItem('aigf_use_custom_llm', on ? '1' : '0'); } catch (e) { /* 忽略 */ }
+  },
+  activeOrEditingLabel(editingId) {
+    const arr = this.loadCustomLlms();
+    const idx = arr.findIndex(s => s.id === editingId);
+    return idx >= 0 ? this.providerLabel(arr[idx], idx) : '';
+  },
+  openProviderForm(editing) {   // 'new' | slot id
+    this.state.editingProvider = editing || 'new';
+    if (editing === 'new') {
+      this.el.customLlmName.value = '';
+      this.el.customLlmBase.value = '';
+      this.el.customLlmKey.value = '';
+      this.el.customLlmModel.value = '';
+    } else {
+      const slot = this.loadCustomLlms().find(s => s.id === editing);
+      if (!slot) { this.state.editingProvider = null; return; }
+      this.el.customLlmName.value = slot.name || '';
+      this.el.customLlmBase.value = slot.baseUrl || '';
+      this.el.customLlmKey.value = slot.apiKey || '';
+      this.el.customLlmModel.value = slot.model || '';
+    }
+    this.refreshCustomLlmUi();
+    this.el.customLlmBase.focus();
+  },
+  closeProviderForm() {
+    this.state.editingProvider = null;
+    this.refreshCustomLlmUi();
+  },
+  // 点击供应商行 = 切换生效槽（DeepSeek 行 = active 清空）
+  setProviderActive(id) {
+    try { localStorage.setItem(this.CUSTOM_ACTIVE_KEY, id || ''); } catch (e) { /* 忽略 */ }
     this.refreshCustomLlmUi();
     this.refreshThinkUi();
     this.updateApiStatus();
-    this.toast(on ? '已启用自定义供应商，对话将走该通道' : '已关闭，对话回落 DeepSeek 官方通道');
+    this.toast(id ? '已切换到「' + this.activeProviderName() + '」' : '已切换到 DeepSeek 官方通道');
+  },
+  deleteProvider(id) {
+    const arr = this.loadCustomLlms();
+    const idx = arr.findIndex(s => s.id === id);
+    if (idx < 0) return;
+    const label = this.providerLabel(arr[idx], idx);
+    arr.splice(idx, 1);
+    this.saveCustomLlms(arr);
+    if (this.customActiveId() === id) {
+      try { localStorage.setItem(this.CUSTOM_ACTIVE_KEY, ''); } catch (e) { /* 忽略 */ }
+      this.toast('已删除「' + label + '」，对话回落 DeepSeek 官方通道');
+    } else {
+      this.toast('已删除「' + label + '」');
+    }
+    this.closeProviderForm();
+    this.refreshThinkUi();
+    this.updateApiStatus();
   },
   // 测试连接：极小请求（max_tokens=1，非流式）验证 URL/Key/Model，失败 toast 给可读原因
   async testCustomLlm() {
@@ -3791,11 +3896,7 @@ ${favList || '（无）'}`,
     if (dash) this.el.dashscopeKeyInput.value = dash;
     const step = localStorage.getItem('stepfun_api_key');
     if (step) this.el.stepKeyInput.value = step;
-    const c = this.customLlmCfg();
-    this.el.customLlmName.value = c.name || '';
-    this.el.customLlmBase.value = c.baseUrl || '';
-    this.el.customLlmKey.value = c.apiKey || '';
-    this.el.customLlmModel.value = c.model || '';
+    this.state.editingProvider = null;   // 多槽（issue #50）：打开面板收起编辑表单，列表即入口
     this.refreshCustomLlmUi();
     this.el.apiPanel.classList.remove('hidden');
     if (!saved) this.el.apiKeyInput.focus();
@@ -3804,15 +3905,35 @@ ${favList || '（无）'}`,
     this.el.apiPanel.classList.add('hidden');
   },
   handleApiKeySave() {
+    // 自定义供应商多槽（issue #50）：编辑态表单随「保存」持久化（新增入列表 / 更新既有槽）
+    const editing = this.state.editingProvider || null;
     const custom = this.readCustomLlmForm();
-    if (this.useCustomLlm() && (!custom.baseUrl || !custom.apiKey || !custom.model)) {
-      this.toast('自定义供应商已启用：Base URL、API Key、Model ID 都要填'); return;
+    if (editing) {
+      if (custom.baseUrl || custom.apiKey || custom.model || custom.name) {
+        if (!custom.baseUrl || !custom.apiKey || !custom.model) {
+          this.toast('Base URL、API Key、Model ID 都要填');
+          const firstEmpty = [['custom-llm-base', custom.baseUrl], ['custom-llm-key', custom.apiKey], ['custom-llm-model', custom.model]].find(([, v]) => !v);
+          const el = firstEmpty && document.getElementById(firstEmpty[0]);
+          if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+          return;
+        }
+        const arr = this.loadCustomLlms();
+        if (editing === 'new') {
+          const seq = arr.reduce((m, s) => Math.max(m, s.seq || 0), 0) + 1;   // 稳定序号：取最大 +1
+          arr.push({ id: this.genProviderId(), seq, name: custom.name, baseUrl: custom.baseUrl, apiKey: custom.apiKey, model: custom.model });
+        } else {
+          const i = arr.findIndex(s => s.id === editing);
+          if (i >= 0) arr[i] = Object.assign({}, arr[i], custom);
+        }
+        this.saveCustomLlms(arr);
+      }
+      this.state.editingProvider = null;   // 保存后收起编辑表单
     }
     const key = this.el.apiKeyInput.value.trim();
     if (!key && !this.useCustomLlm()) { this.toast('Key 不能为空（或改用自定义供应商）'); return; }
     const wasFirstKey = !localStorage.getItem('deepseek_api_key') && !!key;
     if (key) localStorage.setItem('deepseek_api_key', key);
-    else localStorage.removeItem('deepseek_api_key');   // 自定义供应商下允许只填自定义通道
+    else localStorage.removeItem('deepseek_api_key');   // 自定义供应商生效时允许不填官方 Key
     // 网络搜索（可选，issue #9）：Tavily Key；留空即清除并关闭搜索开关
     // 语音转文字 key（issue #38）：DashScope——留空即清除并退出语音模式
     const dash = this.el.dashscopeKeyInput.value.trim();
@@ -3825,13 +3946,6 @@ ${favList || '（无）'}`,
     const step = this.el.stepKeyInput.value.trim();
     if (step) localStorage.setItem('stepfun_api_key', step);
     else localStorage.removeItem('stepfun_api_key');
-    // 自定义供应商配置（issue #18）：四项全空即清除配置并回落官方通道
-    if (custom.baseUrl || custom.apiKey || custom.model || custom.name) {
-      try { localStorage.setItem('aigf_custom_llm', JSON.stringify(custom)); } catch (e) { /* 忽略 */ }
-    } else {
-      localStorage.removeItem('aigf_custom_llm');
-      localStorage.removeItem('aigf_use_custom_llm');
-    }
     this.refreshCustomLlmUi();
     this._ttsCache && this._ttsCache.clear();   // Key 可能变化，朗读缓存作废
     this.refreshThinkUi();
@@ -3849,12 +3963,12 @@ ${favList || '（无）'}`,
     }
   },
   updateApiStatus() {
-    const customOn = this.useCustomLlm() && !!this.customLlmCfg().baseUrl;
+    const customName = this.useCustomLlm() ? this.activeProviderName() : '';
     const hasKey = !!localStorage.getItem('deepseek_api_key');
     const t = this.el.apiStatusText;
-    if (t) t.textContent = customOn ? '自定义供应商已启用 ✓' : (hasKey ? 'API Key 已配置 ✓' : 'API Key 未配置');
+    if (t) t.textContent = customName ? customName + ' · 已启用 ✓' : (hasKey ? 'API Key 已配置 ✓' : 'API Key 未配置');
     const row = document.getElementById('api-status-row');
-    if (row) row.style.color = (customOn || hasKey) ? 'var(--ok-color)' : '';
+    if (row) row.style.color = (customName || hasKey) ? 'var(--ok-color)' : '';
   },
 
   // ═══ 创建角色（用户自建） ═══
@@ -4822,7 +4936,17 @@ ${favList || '（无）'}`,
     // API Key
     this.el.apiSaveBtn.addEventListener('click', () => this.handleApiKeySave());
     this.el.apiBackBtn.addEventListener('click', () => this.closeApiPanel());
-    this.el.customLlmToggle.addEventListener('click', () => this.toggleCustomLlm());
+    // 供应商多槽（issue #50）：行点击切换生效、编辑按钮开表单、增删入口
+    this.el.providerList.addEventListener('click', (e) => {
+      const editBtn = e.target.closest('.provider-edit');
+      if (editBtn) { this.openProviderForm(editBtn.dataset.edit); return; }
+      const row = e.target.closest('.provider-row');
+      if (row) this.setProviderActive(row.dataset.id || '');
+    });
+    this.el.providerAdd.addEventListener('click', () => this.openProviderForm('new'));
+    this.el.providerDel.addEventListener('click', () => {
+      if (this.state.editingProvider && this.state.editingProvider !== 'new') this.deleteProvider(this.state.editingProvider);
+    });
     this.el.customLlmTest.addEventListener('click', () => this.testCustomLlm());
     // 开放平台跳转链接（issue #90）：裸 <a> 依赖 Capacitor 默认行为——
     // 主 WebView 导航到 allowNavigation 外的 https 域名自动转系统浏览器（模拟器实测 ✓）。

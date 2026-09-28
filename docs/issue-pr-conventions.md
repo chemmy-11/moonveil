@@ -8,10 +8,8 @@
 
 | 仓库 / 分支 | 可见性 | 角色 | 规则 |
 |---|---|---|---|
-| `moonveil` · `main` | 公开 | 开发主线（公开版人设） | 所有提交、issue、PR 都在这里 |
-| `moonveil-updates` · `master` | 公开 | OTA 发布仓（latest.json + APK） | 仅发版脚本写入 |
-| `moonveil` | 公开 | 已迁移的公开展示仓 | 冻结在 d12339b，除非用户明确说明，不推送 |
-| `moonveil-updates` | 公开 | OTA 发布仓（APK + latest.json） | 仅随发版流程更新 |
+| `moonveil` · `main` | 公开 | 开发主线（公开版自主演进） | 所有提交、issue、PR 都在这里 |
+| `moonveil-updates-public` · `master` | 公开 | OTA 发布仓（latest.json + APK） | 仅随发版流程更新 |
 
 - **推送时机**：本地提交是常态，`git push`、合并到远程前需用户明确指令。
 - 默认分支为 `main`；一切 PR 的 base 都是 `main`。
@@ -134,9 +132,9 @@
   - PR 关闭语义：关闭 = 放弃该方案（正文注明原因）；「改用直推」不是关闭理由。
 - 合并后删除功能分支。
 - 合并后回归发现缺陷：小缺陷可直推修复（提交信息注明 `（issue #N 回归）`，既有实践）；成规模的回退则在原 issue 下留 comment 记录现象与根因，不新开卡（同主题一张卡）。
-- 含发版的 PR 合并后，走 OTA 流程：APK 推 `moonveil-updates` + 更新 latest.json（见 roadmap「发布规范」）。
+- 含发版的 PR 合并后，走 OTA 流程：APK 推 `moonveil-updates-public` + 更新 latest.json（见 roadmap「发布规范」）。
 
-## 四、隐私与红线（本仓私有化后新增）
+## 四、隐私与红线（公开版口径）
 
 1. 本仓为公开展示仓：人设内置「绝不输出任何成人/性相关内容」硬约束，所有角色文本保持全年龄向。
 2. 涉及人设文本的改动必须与公开定位一致，走**独立的 PR** 专门处理，不与功能改动混提。发布边界见 `docs/publication-policy.md`。
@@ -153,7 +151,7 @@
 | Job | 内容 | 对应清单项 |
 |---|---|---|
 | `check` | ① `node --check` 三个 js | 语法底线 |
-| | ② 角色数据完整性：3 位角色、字段齐全（含 profile）、prompt 含 PART A/B/Layer 0 | 人设双向同步的兜底 |
+| | ② 角色数据完整性：6 位角色、字段齐全（含 profile）、prompt 含 PART A/B/Layer 0 | 人设双向同步的兜底 |
 | | ③ personas 文件存在：从 data.js「记忆文件」注释动态提取核对（防改名失联） | 同上 |
 | | ④ 版本同步：`index.html ?v=` ↔ `js/version.js` 不一致即拦截 | 发版必须跑 build.sh |
 | | ⑤ md5 清单核对：index.html 引用的本地 css/js 必须在 build.sh 校验清单里 | tokens.css 漏录教训 |
@@ -177,13 +175,13 @@
 
 - 四主题回归、双端真机验证：需要真人/agent 视觉判断，保留在 PR 清单人工核对（可借 gui-test-screenshots 留证）。
 - 人设语义质量：归 Correction 层，不进 CI。
-- OTA 发布（推 `moonveil-updates` + latest.json）：仅发版手动触发，不挂 CI。
+- OTA 发布（推 `moonveil-updates-public` + latest.json）：仅发版手动触发，不挂 CI。
 
 ### 5.4 移动端 E2E 方法论（2026-09-26 沉淀）
 
 Android 模拟器（AVD mm_test）验证 WebView 内页面状态的方法与坑：
 
-- **页面内状态读改走 CDP**：`adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`（pid 从 `/proc/net/unix` 找 `com.aigf.app` 进程）→ `Runtime.evaluate` 读 DOM/computed style、驱动 `scrollTop`。UI Automator 树只能看到 WebView 容器，看不到内部 DOM。
+- **页面内状态读改走 CDP**：`adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`（pid 从 `/proc/net/unix` 找 `com.aigf.app.public` 进程）→ `Runtime.evaluate` 读 DOM/computed style、驱动 `scrollTop`。UI Automator 树只能看到 WebView 容器，看不到内部 DOM。
 - **手势注入滚不动 WebView 内部滚动容器**：`adb shell input swipe` / UI Automator swipe 对 Capacitor WebView 的内部 `overflow-y` 容器无效（scrollTop 纹丝不动）——验证滚动驱动逻辑（如 `--pc` 收起）改用 CDP 赋值 `scrollTop`。
 - **scroll 事件异步派发**：JS 赋值 `scrollTop` 后须拆步等待（≥200ms）再读 `--pc` 类派生状态；同一步 evaluate 里赋值+读值读到的是旧值。内容不足时给容器临时 append 垫高元素再滚，验证完移除。
 - **主链路 mock 冒烟**：CDP 重写 `window.fetch` 拦截 LLM endpoint 返回 mock SSE 流 + `localStorage` 塞假 key，即可在无 key 环境走通「发消息 → 流式回复拆条上屏」全链路；logcat（`Capacitor/Console`）可交叉验证 `[sendMessage]` / `[webSearch]` 日志。

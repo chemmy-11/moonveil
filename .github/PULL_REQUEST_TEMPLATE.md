@@ -24,11 +24,11 @@ Closes #
 - [ ] 发版时：跑过 `bash scripts/bump-version.sh [版本号]`（一条命令同步 `js/version.js` 唯一源头 + `build.gradle` versionName/versionCode + index.html `?v=`，内置 versionCode 递增校验——**OTA 依赖 versionCode 递增**）
 - [ ] 新增了 css/js 静态文件 → `scripts/build.sh` 的 md5 校验清单已补录（历史教训：tokens.css 漏过一次）
 - [ ] `bash scripts/build.sh` 全绿（md5 逐字节校验 + 版本一致性）
-- [ ] Web + Android 双端验证过；动了主题/配色 → 三主题回归（珍珠潮汐 / 海港 / 月见）+ 自定义主题（若有自定义壁纸在用）
+- [ ] Web + Android 双端验证过；动了主题/配色 → 四主题回归（纯白 / 纯黑 OLED / 角色专属）+ 自定义主题（若有自定义壁纸在用）
 - [ ] 代码与正文无 token/密钥；不含用户私人数据（见规范第四节）
 - [ ] 关联 issue 已引用；合并后在 issue 留结论 comment（根因 + 提交哈希 + 验证方式）再关闭
 
 ## 合并方式
 
 - 优先 **Squash and merge**（main 历史保持「一条提交 = 一个完整改动」），squash 标题遵循提交信息格式
-- 合并后删除功能分支；含发版的 PR 走 OTA 流程（APK 推 `moonveil-updates` + latest.json）
+- 合并后删除功能分支；含发版的 PR 走 OTA 流程（APK 推 `moonveil-updates-public` + latest.json）

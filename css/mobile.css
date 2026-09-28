@@ -123,6 +123,10 @@
 
   /* ─── 个人主页：移动端（全屏基座统一在 style.css，这里只做状态栏与安全区）─── */
   .profile-panel { top: var(--status-bar-h, 0px); }   /* 全屏落在状态栏之下 */
+  /* 立绘主页沉浸式（issue #55/60 跟进）：top 归 0 消除状态栏让位区的 overlay 压暗横带，
+     header 内容以 padding 补偿避让状态栏 */
+  .profile-panel.has-hero { top: 0; }
+  .profile-panel.has-hero .profile-header { padding-top: var(--status-bar-h, 0px); }
   .api-panel { top: var(--status-bar-h, 0px); }
   /* 关闭键避开状态栏 */
   .profile-close { top: calc(var(--status-bar-h, 0px) + 12px); }

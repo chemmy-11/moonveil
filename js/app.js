@@ -3124,35 +3124,72 @@ ${favList || '（无）'}`,
   saveDrives(id, d) {
     try { localStorage.setItem(this.drivesKey(id), JSON.stringify(d)); } catch (e) { /* 忽略 */ }
   },
-  // 时间回稳：距上次更新越久，各轴越靠向基线（陪伴感=常在，情绪=不过夜）
+  // 默认状态文案池（issue #33）：内置六角色各自带 statusPool（data.js profile 展示层，
+  // 不碰 personas/prompt 段红线），自建角色无池时回落到这里。条目为字符串（任何时段
+  // 可选）或 { t: 'night'|'morning'|'day'|'evening', s: '…' }（仅该时段可选）。
+  STATUS_POOL_DEFAULT: {
+    calm: ['安稳地想着你', '有点想你了', '在等你来聊天', { t: 'night', s: '还醒着，等你道晚安' }, { t: 'morning', s: '刚醒，在想今天怎么过' }],
+    warm: ['和你很亲近', '觉得你很懂我', '想和你分享今天', { t: 'evening', s: '想跟你聊聊今天' }],
+    low: ['心情一般般', '有点提不起劲', '想安静一会儿', { t: 'night', s: '有点睡不着' }],
+    anxious: ['有点担心你', '在等你回消息', '你是不是很忙', { t: 'night', s: '你还没说晚安呢' }],
+    busy: ['最近有点忙', '手头有点事', '忙完就找你', { t: 'day', s: '在忙，但想着你' }],
+  },
+  // 时间桶（issue #33 轻规则）：只影响档内选词，不改档位、不加 LLM 调用
+  statusTimeBucket(d) {
+    const h = d.getHours();
+    if (h >= 23 || h < 5) return 'night';
+    if (h < 9) return 'morning';
+    if (h < 18) return 'day';
+    return 'evening';
+  },
+  // 时间回稳：距上次更新越久，各轴越靠向基线。issue #33 重校：48h 线性回稳
+  // （原 24h 全归位——聊完第二天就归位，变化不可感知）
   decayDrives(d) {
-    const hours = Math.min(48, (Date.now() - (d.lastTs || 0)) / 3600000);
+    const hours = Math.min(72, (Date.now() - (d.lastTs || 0)) / 3600000);
     for (const k of Object.keys(this.DRIVES_BASE)) {
-      d[k] = d[k] + (this.DRIVES_BASE[k] - d[k]) * Math.min(1, hours / 24);
+      d[k] = d[k] + (this.DRIVES_BASE[k] - d[k]) * Math.min(1, hours / 48);
     }
     d.lastTs = Date.now();
     return d;
   },
-  // 事件驱动：按玩家消息关键词微调四轴（极简规则，宁少勿过）
+  // 事件驱动：按玩家消息关键词微调四轴。issue #33 重校：步长加大——同类事件
+  // 连续两轮即入对应档位（原步长要 4~5 轮才到阈值，实际聊天永远停在兜底档）
   updateDrives(gfId, playerText) {
     const d = this.decayDrives(this.loadDrives(gfId));
     const t = playerText || '';
     const clamp = (v) => Math.max(0, Math.min(100, v));
-    if (/想你|爱你|喜欢|抱抱|开心|哈哈|好耶/.test(t)) d.connection = clamp(d.connection + 4), d.mood = clamp(d.mood + 3);
-    if (/难过|累|烦|压力大|失眠|生病|哭/.test(t)) d.anxiety = clamp(d.anxiety + 6), d.mood = clamp(d.mood - 3);
-    if (/加班|工作|开会|忙|项目|考试/.test(t)) d.busy = clamp(d.busy + 5);
-    if (/生气|不理你|冷战|讨厌/.test(t)) d.connection = clamp(d.connection - 5), d.mood = clamp(d.mood - 6);
+    if (/想你|爱你|喜欢|抱抱|开心|哈哈|好耶/.test(t)) d.connection = clamp(d.connection + 8), d.mood = clamp(d.mood + 4);
+    if (/难过|累|烦|压力大|失眠|生病|哭/.test(t)) d.anxiety = clamp(d.anxiety + 10), d.mood = clamp(d.mood - 8);
+    if (/加班|工作|开会|忙|项目|考试/.test(t)) d.busy = clamp(d.busy + 9);
+    if (/生气|不理你|不想理|冷战|讨厌/.test(t)) d.connection = clamp(d.connection - 8), d.mood = clamp(d.mood - 12);
     this.saveDrives(gfId, d);
+    if (this.driveLabelCache) delete this.driveLabelCache[gfId];   // 新事件后下次合成重掷
   },
-  // 状态文案合成：主页展示（按当前最显著的轴给一句人话）
+  // 状态文案合成：主页展示（按当前最显著的轴给一句人话）。
+  // 档位阈值随步长同步重校（issue #33）：anx 40 / busy 52 / mood 50 / conn 68，
+  // 基线出发两轮可达。档内从文案池随机选词（时段桶过滤），结果缓存到下一次
+  // 驱动事件——同会话内刷新主页不闪变；重开 App 重新合成。
   drivesText(gfId) {
+    if (this.driveLabelCache && this.driveLabelCache[gfId]) return this.driveLabelCache[gfId];
     const d = this.decayDrives(this.loadDrives(gfId));
     this.saveDrives(gfId, d);
-    if (d.anxiety >= 45) return { label: '有点担心你', cls: 'anxious' };
-    if (d.busy >= 60) return { label: '最近有点忙', cls: 'busy' };
-    if (d.mood <= 45) return { label: '心情一般般', cls: 'low' };
-    if (d.connection >= 75) return { label: '和你很亲近', cls: 'warm' };
-    return { label: '安稳地想着你', cls: 'calm' };
+    let tier, fallback;
+    if (d.anxiety >= 40) { tier = 'anxious'; fallback = '有点担心你'; }
+    else if (d.busy >= 52) { tier = 'busy'; fallback = '最近有点忙'; }
+    else if (d.mood <= 50) { tier = 'low'; fallback = '心情一般般'; }
+    else if (d.connection >= 68) { tier = 'warm'; fallback = '和你很亲近'; }
+    else { tier = 'calm'; fallback = '安稳地想着你'; }
+    const gf = this.allGfs()[gfId];
+    const pool = (gf && gf.profile && gf.profile.statusPool) || this.STATUS_POOL_DEFAULT;
+    const bucket = this.statusTimeBucket(new Date());
+    const entries = pool[tier] || this.STATUS_POOL_DEFAULT[tier] || [];
+    const eligible = entries.filter(e => typeof e === 'string' || !e.t || e.t === bucket);
+    const list = eligible.length ? eligible : entries;
+    const pick = list.length ? list[Math.floor(Math.random() * list.length)] : fallback;
+    const out = { label: typeof pick === 'string' ? pick : (pick.s || fallback), cls: tier };
+    if (!this.driveLabelCache) this.driveLabelCache = {};
+    this.driveLabelCache[gfId] = out;
+    return out;
   },
 
   // ═══ 记忆注入（双向回路的「读」侧）═══

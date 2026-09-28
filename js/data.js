@@ -14,6 +14,7 @@ const GIRLFRIENDS = {
   wanwan: {
     id: 'wanwan',
     name: '苏晚晚',
+    gender: 'female',
     tag: '温柔治愈 · 晚风花房店主',
     mbti: 'ISFP',
     color: '#f472b6',            // 主题粉
@@ -296,6 +297,7 @@ const GIRLFRIENDS = {
   tangtang: {
     id: 'tangtang',
     name: '唐苓',
+    gender: 'female',
     tag: '元气活泼 · 烘焙学徒',
     mbti: 'ESFJ',
     color: '#fbbf24',            // 主题橙
@@ -576,6 +578,7 @@ const GIRLFRIENDS = {
   jiying: {
     id: 'jiying',
     name: '季萤',
+    gender: 'female',
     tag: '慢热治愈 · 深夜电台的温柔声音',
     mbti: 'INFP',
     color: '#93c5fd',            // 主题雾蓝
@@ -824,6 +827,7 @@ const GIRLFRIENDS = {
   ouyangyue: {
     id: 'ouyangyue',
     name: '欧阳越',
+    gender: 'male',
     tag: '安静规划 · 考研冲刺的心理学大四',
     mbti: 'INFJ',
     color: '#7C9DA8',            // 主题雾青（静水深流）
@@ -1075,6 +1079,7 @@ const GIRLFRIENDS = {
   jiangye: {
     id: 'jiangye',
     name: '江野',
+    gender: 'male',
     tag: '直率行动 · 街角咖啡馆老板',
     mbti: 'ESTP',
     color: '#B08968',            // 主题拿铁赭棕（烟火气）
@@ -1324,6 +1329,7 @@ emoji 用得糙：👌 👍 🌧 这种，从不发长串。
   linle: {
     id: 'linle',
     name: '林乐',
+    gender: 'male',
     tag: '快乐分享 · 养猫的新媒体打工人',
     mbti: 'ENFP',
     color: '#CFA84C',            // 主题芥末黄（暖而不艳）

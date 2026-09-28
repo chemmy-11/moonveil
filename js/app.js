@@ -3452,13 +3452,20 @@ ${favList || '（无）'}`,
     const on = this.useCustomLlm();
     this.el.customLlmToggle.classList.toggle('on', on);
     this.el.customLlmToggle.setAttribute('aria-checked', on ? 'true' : 'false');
-    this.el.customLlmForm.classList.toggle('off', !on);   // 关态整块半透明只读
+    this.el.customLlmForm.classList.toggle('off', !on);   // 关态仅视觉弱化，保持可编辑（issue #39：off 只读会与「先填再启用」死锁）
   },
   toggleCustomLlm() {
     const on = !this.useCustomLlm();
     if (on) {
       const c = this.readCustomLlmForm();
-      if (!c.baseUrl || !c.apiKey || !c.model) { this.toast('先填写 Base URL、API Key 和 Model ID 再启用'); return; }
+      if (!c.baseUrl || !c.apiKey || !c.model) {
+        this.toast('先填写 Base URL、API Key 和 Model ID 再启用');
+        // 聚焦第一个空框引导填写（issue #39：只 toast 不聚焦，用户不知道从哪补）
+        const firstEmpty = [['custom-llm-base', c.baseUrl], ['custom-llm-key', c.apiKey], ['custom-llm-model', c.model]].find(([, v]) => !v);
+        const el = firstEmpty && document.getElementById(firstEmpty[0]);
+        if (el) { el.focus(); el.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+        return;
+      }
     }
     try { localStorage.setItem('aigf_use_custom_llm', on ? '1' : '0'); } catch (e) { /* 忽略 */ }
     this.refreshCustomLlmUi();

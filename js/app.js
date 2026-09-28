@@ -194,6 +194,8 @@ const App = {
       sbVoiceReplyMode: document.getElementById('sb-voice-reply-mode'),
       sbProactive: document.getElementById('sb-proactive'),
       sbProactiveMode: document.getElementById('sb-proactive-mode'),
+      sbNotify: document.getElementById('sb-notify'),
+      sbNotifyMode: document.getElementById('sb-notify-mode'),
       fontOverlay: document.getElementById('font-overlay'),
       fontModal: document.getElementById('font-modal'),
       fontOptions: document.getElementById('font-options'),
@@ -2619,6 +2621,8 @@ const App = {
     this.saveProactive();
     this.refreshProactiveUi();
     this.toast(cfg.enabled ? '她会主动找你聊天了（到点消耗 API 额度）' : '已关闭主动消息');
+    if (cfg.enabled) this.scheduleNextPlaceholder();   // 期二（issue #41）：开即预排占位通知
+    else this.cancelPlaceholders();
   },
   refreshProactiveUi() {
     if (this.el.sbProactiveMode) this.el.sbProactiveMode.textContent = this.proactiveOn() ? '开' : '关';
@@ -2681,6 +2685,145 @@ const App = {
     } catch (e) {
       console.error('[proactive]', e);
     }
+    this.maybeNotifyProactive(gfId);   // App 在后台 → 系统通知（issue #41 期二）
+    this.scheduleNextPlaceholder();    // 顺排下一个窗口的占位提醒
+  },
+
+  // ═══ 本地通知（issue #41 期二：主动消息移动端提示）═══
+  // @capacitor/local-notifications（官方免费插件）。三件事：
+  // ① 存活期即时通知——主动消息入历史且 App 在后台 → 系统通知（真实首条气泡内容）；
+  //    前台聊天零打扰（站内未读已覆盖）
+  // ② 后台预排通知——当前角色下一个节律窗口的「想你了，来聊聊」占位（无内容预生成，
+  //    生成与通知解耦：点开由期一心跳评估补发真消息）；只给当前角色排，防多角色轰炸
+  // ③ 点通知深链——切到对应角色会话；冷启走 localStorage pending 标记兜底
+  // 边界（诚实声明）：纯本地通知无推送通道；App 被杀 / 国产 ROM 清后台时预排也可能
+  // 收不到（平台限制，开关 title 有说明）；Web 端不承诺系统通知。
+  // 权限：Android 13+ POST_NOTIFICATIONS 在开关手势内运行时申请；拒绝 → 降级仅站内未读。
+  NOTIFY_KEY: 'aigf_notify_enabled',
+  NOTIFY_PENDING_KEY: 'aigf_notify_pending_gf',
+  NOTIFY_PLACEHOLDER_ID: 41,   // 占位通知固定 id：重排天然覆盖、单独可取消
+  NOTIFY_CHANNEL: 'proactive',
+  notifyPlugin() {
+    const cap = window.Capacitor;
+    return (cap && cap.isNativePlatform && cap.isNativePlatform() && cap.Plugins && cap.Plugins.LocalNotifications) || null;
+  },
+  notifyOn() { return localStorage.getItem(this.NOTIFY_KEY) !== '0'; },   // 默认开；无权限时零副作用
+  async toggleNotify() {
+    const on = !this.notifyOn();
+    localStorage.setItem(this.NOTIFY_KEY, on ? '1' : '0');
+    this.refreshNotifyUi();
+    if (!on) {
+      this.cancelPlaceholders();
+      this.toast('已关闭系统通知（仍在应用内提示未读）');
+      return;
+    }
+    const ln = this.notifyPlugin();
+    if (!ln) { this.toast('消息通知已开启（网页版不出系统通知）'); return; }
+    try {
+      const p = await ln.requestPermissions();   // Android 13+ 运行时权限（开关手势内请求）
+      if (p && p.display === 'granted') {
+        this.toast('消息通知已开启');
+        this.scheduleNextPlaceholder();
+      } else {
+        this.toast('通知权限未授予——她发消息时仅应用内提示未读（可在系统设置开启）');
+      }
+    } catch (e) {   // 权限接口异常不阻塞开关
+      this.toast('消息通知已开启');
+    }
+  },
+  refreshNotifyUi() {
+    if (this.el.sbNotifyMode) this.el.sbNotifyMode.textContent = this.notifyOn() ? '开' : '关';
+  },
+  async notifyPermitted() {
+    const ln = this.notifyPlugin();
+    if (!ln) return false;
+    try { const p = await ln.checkPermissions(); return !!(p && p.display === 'granted'); }
+    catch (e) { return false; }
+  },
+  // ① 即时通知：主动消息流收尾后调用；后台 + 开 + 有权限三过才发
+  async maybeNotifyProactive(gfId) {
+    if (!document.hidden) return;                     // 前台：站内未读已覆盖，零打扰
+    if (!this.notifyOn() || !(await this.notifyPermitted())) return;
+    const ln = this.notifyPlugin();
+    const gf = this.allGfs()[gfId];
+    const last = [...(this.state.histories[gfId] || [])].reverse().find(m => m.role !== 'player');
+    if (!ln || !gf || !last) return;
+    try {
+      await ln.schedule({
+        notifications: [{
+          id: Math.floor(Math.random() * 2100000000),
+          title: gf.name,
+          body: (last.text || '给你发了一条消息').slice(0, 60),
+          smallIcon: 'ic_stat_notify',
+          channelId: this.NOTIFY_CHANNEL,
+          extra: { gfId },
+        }],
+      });
+    } catch (e) { console.warn('[notify]', e); }
+  },
+  // ② 预排占位：当前角色的下一个节律窗口（已过/太近则顺延明天；≥30 分钟后才排）
+  async scheduleNextPlaceholder() {
+    const ln = this.notifyPlugin();
+    if (!ln || !this.notifyOn() || !this.proactiveOn()) return;
+    const gfId = this.state.currentGf;
+    const gf = this.allGfs()[gfId];
+    if (!gf || !this.state.enabledGfs || !this.state.enabledGfs.has(gfId)) return;
+    const now = new Date();
+    const off = this.proactiveOffsets(now.toISOString().slice(0, 10));
+    const at = [this.PROACTIVE_WIN.morning + off.morning, this.PROACTIVE_WIN.night + off.night]
+      .map((min) => {
+        const d = new Date(now);
+        d.setHours(Math.floor(min / 60), ((min % 60) + 60) % 60, 0, 0);
+        if (d.getTime() <= now.getTime() + 30 * 60e3) d.setDate(d.getDate() + 1);
+        return d;
+      })
+      .sort((a, b) => a - b)[0];
+    await this.cancelPlaceholders();
+    try {
+      await ln.schedule({
+        notifications: [{
+          id: this.NOTIFY_PLACEHOLDER_ID,
+          title: gf.name,
+          body: '想你了，来聊聊',
+          schedule: { at, allowWhileIdle: true },
+          smallIcon: 'ic_stat_notify',
+          channelId: this.NOTIFY_CHANNEL,
+          extra: { gfId },
+        }],
+      });
+    } catch (e) { console.warn('[notify:placeholder]', e); }
+  },
+  async cancelPlaceholders() {
+    const ln = this.notifyPlugin();
+    if (!ln) return;
+    try { await ln.cancel({ notifications: [{ id: this.NOTIFY_PLACEHOLDER_ID }] }); } catch (e) { /* 未排过/失败静默 */ }
+  },
+  // ③ 深链：init 挂监听（温启直接切会话）+ 冷启 pending 标记兜底
+  async initNotify() {
+    this.refreshNotifyUi();
+    const ln = this.notifyPlugin();
+    if (!ln) return;
+    try {
+      await ln.createChannel({   // 幂等；锁屏不显示消息内容
+        id: this.NOTIFY_CHANNEL, name: '她的消息', importance: 3, visibility: 'private',
+      });
+    } catch (e) { /* 渠道已存在/低版本静默 */ }
+    try {
+      await ln.addListener('localNotificationActionPerformed', (ev) => {
+        const gfId = ev && ev.notification && ev.notification.extra && ev.notification.extra.gfId;
+        if (!gfId || !this.allGfs()[gfId]) return;
+        localStorage.setItem(this.NOTIFY_PENDING_KEY, gfId);
+        if (this.state.ready) this.consumePendingNotify();
+      });
+    } catch (e) { /* Web/旧版静默 */ }
+    this.consumePendingNotify();
+    if (this.notifyOn() && this.proactiveOn()) this.scheduleNextPlaceholder();
+  },
+  consumePendingNotify() {
+    const gfId = localStorage.getItem(this.NOTIFY_PENDING_KEY);
+    if (!gfId) return;
+    localStorage.removeItem(this.NOTIFY_PENDING_KEY);
+    if (this.allGfs()[gfId] && gfId !== this.state.currentGf) this.switchGf(gfId);
   },
 
   // ═══ 流结束收尾 ═══
@@ -4731,8 +4874,11 @@ ${favList || '（无）'}`,
     // 语音回复模式（issue #13）：文字 / 语音气泡二选一（全局持久化）
     this.el.sbVoiceReply.addEventListener('click', () => this.toggleVoiceReply());
     this.el.sbProactive.addEventListener('click', () => this.toggleProactive());
+    this.el.sbNotify.addEventListener('click', () => this.toggleNotify());
     this.syncVoiceReplyUi();
     this.refreshProactiveUi();
+    // 本地通知初始化（issue #41 期二）：渠道 + 点通知深链监听 + 冷启 pending 兜底 + 初始预排
+    this.initNotify().finally(() => { this.state.ready = true; });
     // 主动消息心跳（issue #27 期一）：每分钟节律检查 + 回前台立即补检（错过窗口不补发）
     setInterval(() => this.proactiveCheck(), 60e3);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) this.proactiveCheck(); });

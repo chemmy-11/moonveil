@@ -332,8 +332,8 @@ body.keyboard-open .main-layout {
 }
 
 .sidebar-brand { padding: 6px 10px 16px; display: flex; align-items: center; gap: 10px; }
-.brand-title { font-size: var(--text-2xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-widest); }
-.brand-sub { font-size: var(--text-sm); color: var(--text-dim); margin-top: 3px; letter-spacing: var(--ls-wide); }
+.brand-title { font-size: var(--text-2xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-widest); display: flex; align-items: baseline; gap: 7px; }
+.brand-en { font-size: var(--text-sm); font-weight: var(--fw-normal, 400); color: var(--text-dim); letter-spacing: var(--ls-wide); }
 .brand-logo {
   width: 36px; height: 36px;
   flex: none;
@@ -1621,6 +1621,10 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   margin-bottom: calc(10px - 5px * var(--pc, 0));
 }
 .profile-name { font-size: var(--text-xl); font-weight: var(--fw-semibold); letter-spacing: var(--ls-widest); }
+/* header 无雾化底后（issue #53）的立绘上文字可读兜底：细描边式阴影，不加底色 */
+.has-hero .profile-name, .has-hero .profile-tag, .has-hero .profile-signature {
+  text-shadow: 0 1px 3px color-mix(in srgb, var(--bg) 72%, transparent), 0 0 10px color-mix(in srgb, var(--bg) 45%, transparent);
+}
 .profile-tag {
   font-size: var(--text-sm);
   color: var(--gf-color);
@@ -2124,11 +2128,10 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   background-size: cover;
   background-position: top center;
 }
-/* 立绘上保文字可读：header 雾化层（按主题明暗自适应）；
-   body 不再大面积雾化——立绘全幅可见，分区卡片自行承担可读性（见 gf 主题卡片规则） */
-.profile-panel.has-hero .profile-header {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 53%, transparent), color-mix(in srgb, var(--bg) 67%, transparent));
-}
+/* 立绘主页 header 不加雾化底（issue #53 owner 定：灰色遮罩去掉，立绘顶到面板顶；
+   #10/#11 降透明度路线到此归零）——has-hero 下连女友色光晕一并去掉，文字可读性
+   靠 text-shadow 微兜底（不加底色）；无立绘主页的光晕是唯一 header 装饰，保留 */
+.profile-panel.has-hero .profile-header { background: none; }
 /* 角色专属主题：分区卡片化——半透明浅底（无磨砂）+ 自然圆角，立绘透出不被遮挡（issue #6 跟进/owner 反馈）。
    透明度基准：比 header 雾化层（66% bg）略透明，取 56%；磨砂 blur 会把立绘糊掉，弃用 */
 html[data-theme="gf"] .profile-section {

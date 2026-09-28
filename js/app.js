@@ -4366,6 +4366,11 @@ ${favList || '（无）'}`,
     if (window.history.length > 1) history.back();
     else window.Capacitor.Plugins.App.exitApp();
   },
+  // 主页/文案人称（issue #53）：male=他 / female=她 / 无性别信息（自建角色）=中性 TA
+  pronoun(gfId) {
+    const gf = this.allGfs()[gfId || this.state.currentGf];
+    return gf && gf.gender === 'male' ? '他' : gf && gf.gender === 'female' ? '她' : 'TA';
+  },
   openProfile() {
     const gf = this.allGfs()[this.state.currentGf];
     if (!gf || !gf.profile) return;
@@ -4396,13 +4401,13 @@ ${favList || '（无）'}`,
         <div class="pb-value">${this.esc(b.value)}</div>
       </div>`).join('') + mbtiItem + `
       <div class="profile-basic-item">
-        <div class="pb-label">她的状态</div>
+        <div class="pb-label">${this.pronoun()}的状态</div>
         <div class="pb-value profile-drive drive-${drive.cls}">${this.esc(drive.label)}</div>
       </div>`;
-    // 关于她
+    // 关于她/他/TA（issue #53：按角色性别，自建角色中性 TA）
     const bio = p.bio ? `
       <div class="profile-section">
-        <div class="profile-section-title"><span>关于她</span></div>
+        <div class="profile-section-title"><span>关于${this.pronoun()}</span></div>
         <div class="profile-bio">${p.bio}</div>
       </div>` : '';
     // 回忆卡 + 喜好卡 + 相处习惯卡（可操作：置顶/删除/手动添加，issue #1 第一层）

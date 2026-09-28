@@ -1513,7 +1513,9 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   border-top: 1px solid var(--card-border);
 }
 .api-custom-label { font-size: var(--text-md); font-weight: var(--fw-medium, 500); }
-#custom-llm-form.off { opacity: .5; pointer-events: none; }
+/* off = 未启用视觉弱化；必须保持可编辑——启用开关要求「先填表单再开」，
+   pointer-events:none 会与该校验死锁（issue #39：App 端永远填不了） */
+#custom-llm-form.off { opacity: .5; }
 .api-custom-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
 .api-hint { font-size: var(--text-xs, 12px); color: var(--text-dim); margin: 10px 0 0; line-height: var(--lh-relaxed); }
 .api-footer {

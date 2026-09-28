@@ -1,6 +1,6 @@
 # 月见 Issue / PR 提报规范
 
-> 最后更新：2026-09-26（纠偏 §3.4 主题名至现行四主题；§5.3 增补移动端 E2E 方法论）· 适用主仓库 `chemmy-11/moonveil`
+> 最后更新：2026-09-28（§一 基线表对齐策略反转现行，新增发版权限语义）· 适用主仓库 `chemmy-11/moonveil`
 >
 > 定位：月见是小团队协作项目（owner + 开发组成员 + 多个 AI agent 会话），本文规范「人 / AI agent」两类提交者的 Issue 与 PR 行为，与 `docs/roadmap.md`（里程碑与方向）、`docs/collab-onboarding.md`（新成员入门）、README（项目定位）互补：**roadmap 记方向，issue 记可执行事项，PR 记落地过程**。
 
@@ -8,11 +8,12 @@
 
 | 仓库 / 分支 | 可见性 | 角色 | 规则 |
 |---|---|---|---|
-| `moonveil` · `main` | 公开 | 开发主线（公开版自主演进） | 所有提交、issue、PR 都在这里 |
-| `moonveil-updates-public` · `master` | 公开 | OTA 发布仓（latest.json + APK） | 仅随发版流程更新 |
+| `moonveil` · `main` | 公开 | 开发主线（公开版人设） | 所有开发、issue、PR 都在这里 |
+| `moonveil-updates-public` · `master` | 公开 | 本仓 OTA 发布仓 | 仅发版流程写入（APK + latest.json，只留当前版） |
 
-- **推送时机**：本地提交是常态，`git push`、合并到远程前需用户明确指令。
-- 默认分支为 `main`；一切 PR 的 base 都是 `main`。
+- 私有侧（`moonveil-archive` 历史存档、`moonveil-updates` 私有版 OTA）不属于本仓日常体系：默认不推不动、不发版。
+- **发版权限**：版本号变更、GitHub Release、OTA 推送由 owner 触发/授权；AI 协作者日常开发不主动发版，适合打包的内容列入「待 owner 事项」。
+- 默认分支为 `main`；一切 PR 的 base 都是 `main`；force push 与改写历史禁止。
 
 ## 二、Issue 规范
 
@@ -118,6 +119,7 @@
 - [ ] `js/data.js` 角色对象字段齐全：id/name/tag/mbti/color/avatar/status/greeting/quickEmoji/profile(signature/basic/bio/cards)/prompt；prompt 含 PART A / PART B / Layer 0 结构与全年龄硬约束（CI ② 断言）
 - [ ] prompt 记忆协议的【喜好】人称与角色性别一致（女性角色「她」、男性角色「他」）
 - [ ] `css/style.css` 补 `body[data-gf="<id>"]` 主题色块（--gf-color-base/soft/grad/on-gf 四件套；与既有角色色拉开区分）
+- [ ] **`css/tokens.css` 补 gf「角色专属」主题块**（issue #34 教训：`html[data-theme="gf"] body[data-gf="<id>"]` 十 token——player-grad/on-player/player-shadow/bubble-gf/bubble-gf-border/card-bg/card-border/bg-soft/input-bg/danger，透明度对齐既有角色锚值；缺此块则 gf 主题下该角色落兜底中性灰紫，玩家气泡/发送键发灰、输入卡透明度不一致。#72 只建了晚晚/唐苓，季萤与三男均漏）
 - [ ] 头像 `assets/<id>.webp` 入库 + `scripts/build.sh` md5 清单补录
 - [ ] **默认启用策略**：新角色**不进** `DEFAULT_ENABLED_IDS`（app.js）——入库待用户从角色库启用；只有「首发内置」才在默认集
 - [ ] CI 角色数断言同步：ci.yml 角色完整性（`ids.length`）与 personas 引用数（`refs.length`）两处硬编码
@@ -132,9 +134,9 @@
   - PR 关闭语义：关闭 = 放弃该方案（正文注明原因）；「改用直推」不是关闭理由。
 - 合并后删除功能分支。
 - 合并后回归发现缺陷：小缺陷可直推修复（提交信息注明 `（issue #N 回归）`，既有实践）；成规模的回退则在原 issue 下留 comment 记录现象与根因，不新开卡（同主题一张卡）。
-- 含发版的 PR 合并后，走 OTA 流程：APK 推 `moonveil-updates-public` + 更新 latest.json（见 roadmap「发布规范」）。
+- 含发版的 PR 合并后，走 OTA 流程：APK 推 `moonveil-updates` + 更新 latest.json（见 roadmap「发布规范」）。
 
-## 四、隐私与红线（公开版口径）
+## 四、隐私与红线（本仓私有化后新增）
 
 1. 本仓为公开展示仓：人设内置「绝不输出任何成人/性相关内容」硬约束，所有角色文本保持全年龄向。
 2. 涉及人设文本的改动必须与公开定位一致，走**独立的 PR** 专门处理，不与功能改动混提。发布边界见 `docs/publication-policy.md`。
@@ -151,7 +153,7 @@
 | Job | 内容 | 对应清单项 |
 |---|---|---|
 | `check` | ① `node --check` 三个 js | 语法底线 |
-| | ② 角色数据完整性：6 位角色、字段齐全（含 profile）、prompt 含 PART A/B/Layer 0 | 人设双向同步的兜底 |
+| | ② 角色数据完整性：3 位角色、字段齐全（含 profile）、prompt 含 PART A/B/Layer 0 | 人设双向同步的兜底 |
 | | ③ personas 文件存在：从 data.js「记忆文件」注释动态提取核对（防改名失联） | 同上 |
 | | ④ 版本同步：`index.html ?v=` ↔ `js/version.js` 不一致即拦截 | 发版必须跑 build.sh |
 | | ⑤ md5 清单核对：index.html 引用的本地 css/js 必须在 build.sh 校验清单里 | tokens.css 漏录教训 |
@@ -175,13 +177,13 @@
 
 - 四主题回归、双端真机验证：需要真人/agent 视觉判断，保留在 PR 清单人工核对（可借 gui-test-screenshots 留证）。
 - 人设语义质量：归 Correction 层，不进 CI。
-- OTA 发布（推 `moonveil-updates-public` + latest.json）：仅发版手动触发，不挂 CI。
+- OTA 发布（推 `moonveil-updates` + latest.json）：仅发版手动触发，不挂 CI。
 
 ### 5.4 移动端 E2E 方法论（2026-09-26 沉淀）
 
 Android 模拟器（AVD mm_test）验证 WebView 内页面状态的方法与坑：
 
-- **页面内状态读改走 CDP**：`adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`（pid 从 `/proc/net/unix` 找 `com.aigf.app.public` 进程）→ `Runtime.evaluate` 读 DOM/computed style、驱动 `scrollTop`。UI Automator 树只能看到 WebView 容器，看不到内部 DOM。
+- **页面内状态读改走 CDP**：`adb forward tcp:9222 localabstract:webview_devtools_remote_<pid>`（pid 从 `/proc/net/unix` 找 `com.aigf.app` 进程）→ `Runtime.evaluate` 读 DOM/computed style、驱动 `scrollTop`。UI Automator 树只能看到 WebView 容器，看不到内部 DOM。
 - **手势注入滚不动 WebView 内部滚动容器**：`adb shell input swipe` / UI Automator swipe 对 Capacitor WebView 的内部 `overflow-y` 容器无效（scrollTop 纹丝不动）——验证滚动驱动逻辑（如 `--pc` 收起）改用 CDP 赋值 `scrollTop`。
 - **scroll 事件异步派发**：JS 赋值 `scrollTop` 后须拆步等待（≥200ms）再读 `--pc` 类派生状态；同一步 evaluate 里赋值+读值读到的是旧值。内容不足时给容器临时 append 垫高元素再滚，验证完移除。
 - **主链路 mock 冒烟**：CDP 重写 `window.fetch` 拦截 LLM endpoint 返回 mock SSE 流 + `localStorage` 塞假 key，即可在无 key 环境走通「发消息 → 流式回复拆条上屏」全链路；logcat（`Capacitor/Console`）可交叉验证 `[sendMessage]` / `[webSearch]` 日志。

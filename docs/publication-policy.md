@@ -1,57 +1,37 @@
-# 公开版内容规范（发布边界与同步流程）
+# 公开版内容规范（内容边界 · 发版与更新源 · 应用身份）
 
-> 最后更新：2026-09-28 · 本文件是公开版快照的内容边界声明与同步操作规范，所有参与发布的人（含 AI 协作者）必须遵守。
->
-> ⚠️ **策略状态（2026-09-28 起）**：本仓 `chemmy-11/moonveil` 已从「展示快照仓」转为**自主演进的主开发仓**——角色已扩展为六位（README 角色表 / `js/data.js` / CI 断言为准），不再从任何开发主线单向同步。因此**第二节「固定两位」边界与第三节「整树覆盖同步流程」均已停用**，仅作历史参考；仍然有效的是：**全年龄与隐私红线（第二节 2-5 条）、OTA 更新源策略（第四节，`js/app.js` 实际指向 `moonveil-updates-public`）、应用身份与签名（第五节，与当前代码一致）**。
+> 最后更新：2026-09-28 · 2026-09-27 仓库策略反转后，本仓（`chemmy-11/moonveil`）即主开发仓，日常开发、issue、PR 都在这里；原「从主线整树同步快照」流程废止。本文档改写为现行流程：内容边界 + 发版与更新源 + 应用身份。所有参与发布的人（含 AI 协作者）必须遵守。
 
-## 一、仓库定位
+## 一、仓库定位（现行）
 
 | 仓库 | 可见性 | 角色 |
 |---|---|---|
-| `chemmy-11/moonveil` | 公开 | 主开发仓（公开版自主演进；2026-09-28 前为展示快照仓，见头部状态说明） |
-| `chemmy-11/moonveil-updates-public` | 公开 | 公开版 OTA 更新源（脱敏构建 latest.json + APK），本仓应用内「检查更新」拉取（见第四节） |
+| `chemmy-11/moonveil`（本仓） | 公开 | 主开发仓：全部开发、issue、PR、发版都在此（公开版人设） |
+| `chemmy-11/moonveil-updates-public` | 公开 | 本仓的 OTA 更新源（latest.json + APK），应用内「检查更新」拉取 |
 
-- ~~公开仓是**展示快照**，从开发主线单向同步；反向合并永不发生。~~（快照策略，已停用）
-- ~~同步是**低频整树快照**：单提交覆盖，不搬中间历史；公开仓已有历史默认不重写。~~（快照策略，已停用）
-- 公开仓的 persona 文档为公开版自持内容，随版本自主演进。
+- 本仓历史即真实开发历史（默认不重写、不 force push）；不存在「从其它主线同步」的流程。
+- persona 文件以本仓为唯一事实源，不与任何其它仓库的人设文件互相复制。
 
 ## 二、内容边界（硬性）
 
-> 第 1 条为快照策略历史口径（已停用，见头部状态说明）；第 2-5 条为现行硬约束。
-
-1. **角色**（历史口径）：快照策略下公开版固定两位——苏晚晚、唐苓。**现行公开版为六位内置角色**（苏晚晚 / 唐苓 / 季萤 / 欧阳越 / 江野 / 林乐），以 README 角色表与 `js/data.js` 为准；所有角色人设、头像、主题色均须保持全年龄向。
-2. **全年龄**：所有角色文本保持全年龄向。人设内置硬约束「绝不输出任何成人/性相关内容」（Layer 0 与边界层双写），亲密表达止步于拥抱、牵手、靠肩、晚安吻（脸颊）；涉及亲密的段落使用「亲密与陪伴」框架（睡前模式、晚安句库、撒娇模式等替位内容）。
+1. **角色**：公开版当前内置六位——苏晚晚、唐苓、季萤、欧阳越、江野、林乐（三位男性角色默认入库不启用，见「内置角色库」机制）+ 用户自建角色。新增/移除内置角色时同步更新：README 角色表、`js/data.js`、`personas/`、`.github/workflows/ci.yml` 角色断言、`scripts/build.sh` md5 清单（涉头像）、`js/app.js` 的 `DEFAULT_ENABLED_IDS`（新角色不进默认启用集）与本文档计数。
+2. **全年龄**：所有角色文本保持全年龄向。人设内置硬约束「绝不输出任何成人/性相关内容」（Layer 0 与边界层双写），亲密表达止步于拥抱、牵手、靠肩、晚安吻（脸颊）；涉及亲密的段落使用「亲密与陪伴」框架。
 3. **隐私**：不出现用户/owner 的可指认私人信息——身体数据、私人经历、真实身份线索、内部工具链细节。
 4. **密钥**：任何形态的 token/key 不得入库（CI ⑥ `sk-` 扫描兜底）。
 5. **基础设施**：不出现内部服务地址与私有仓引用；仓库表、clone 地址、issue 链接一律指向公开仓。已移除后端的工程历史注释（事实性描述）可保留。
-6. **计数措辞**：README/docs/UI 注释中的角色计数与实际一致（以 `js/data.js` 与 CI 断言为准，当前六位）。
+6. **计数措辞**：README/docs/UI 注释中的角色计数与实际一致（当前「六位」；「三位/三份」类派生计数与「三角色/三份/三位」一起 grep 排查）。
 
-## 三、同步操作流程（checklist · 快照策略，已停用）
+## 三、发版与更新源（现行流程）
 
-1. 在开发主线确定同步基点 commit（通常是最新发版 commit）。
-2. 清空公开仓工作树 → `git archive <基点>` 整树覆盖 → 删除不随包发布的文件。
-3. 按本规范第二节逐条脱敏：
-   - `js/data.js`：角色数=2；保留两位角色 prompt 的工程演进（MBTI、消息模式、句库结构等非敏感迭代），亲密相关段落按「亲密与陪伴」框架改写，硬约束双写到位。
-   - `personas/*.md`：与 data.js prompt 同口径脱敏；角色显示名与公开版一致。
-   - `css/`（含主题文档）：删去不在版角色的主题色块。
-   - `README.md` / `docs/`：角色表、目录树、计数措辞、仓库链接逐项核对。
-   - `.github/workflows/ci.yml`：角色数据校验与 personas 引用校验的数量断言 = 实际角色数（当前 2）。
-   - `js/app.js`：更新源 URL 改写为 `moonveil-updates-public`（见第四节——整树覆盖后必查项）。
-   - **应用身份改写**（见第五节——整树覆盖后必查项）：`android/app/build.gradle` 的 `applicationId`、`android/app/src/main/res/values/strings.xml` 四项、`capacitor.config.json` 的 `appId`/`appName`。
-4. 本地复刻 CI check 六项（语法 / 角色数据 / personas 引用 / 版本同步 / md5 清单 / 密钥扫描），全绿才推送。
-5. 单提交同时推 `main` 与 `master`（保持同 sha），盯 CI 到绿。
-6. 同步提交信息只描述公开版动作（如「移除第三角色」「与主线 vX.Y.Z 同步」），不引入边界外内容。
+- **版本同步**：一条命令 `bash scripts/bump-version.sh [版本号]`（`js/version.js` 唯一源头 → build.sh 注入 index.html `?v=` → `build.gradle` versionName/versionCode；versionCode 规则 v2 = `(major+1)×10000 + minor×100 + patch`，严格递增——OTA 依赖）。
+- **发版权限**：由 owner 触发/授权；AI 协作者日常开发不主动发版（版本字段、Release、OTA 均不擅动），适合打包的内容列入「待 owner 事项」。
+- **发版动作**（owner 授权后执行）：tag `vX.Y.Z` + GitHub Release（标题就是 `vX.Y.Z`，不带「公开发布」等后缀；APK 附件与 OTA 同一构建）→ 推 `moonveil-updates-public`（APK 文件名带版本 `AI-GF-<版本>.apk` + latest.json 的 `apk_url` 指向该文件名 + 删旧包，更新仓只留当前版 + latest.json）。
+- **发版自查**：解包 APK 复查第二节内容边界；latest.json notes 控制在 6 行内（App 弹窗只截前 6 行）；raw CDN 有缓存延迟，验证以 api.github.com 主源为准。
+- 本仓 `js/app.js` 的更新源 URL 恒为 `moonveil-updates-public`（`RAW_URL` / `API_URL`）——任何触碰更新源相关代码的 PR 核对这一点。
 
-## 四、更新源策略（双源定案 2026-09-27）
+## 四、应用身份与签名（公开版独立）
 
-- ~~`chemmy-11/moonveil-updates`：日常发版源（开发主线构建，本仓不同步）。~~（历史双源策略；现行本仓 `js/app.js` 只指向 `moonveil-updates-public`）
-- `chemmy-11/moonveil-updates-public`：公开版更新源——公开快照构建的脱敏 APK + latest.json。
-- **本仓 `js/app.js` 的更新源 URL 固定指向 `moonveil-updates-public`**（`RAW_URL` / `API_URL` 两处 + 注释）。这是公开仓与开发主线唯一登记在案的代码差异：整树覆盖同步时**必须重新应用本改写**（已纳入第三节第 3 步 checklist）。
-- 公开版发版纪律与主线一致：APK 文件名带版本号（`AI-GF-<版本>.apk`）、latest.json 的 `apk_url` 指向带版本文件名、更新仓只保留当前版 + latest.json、更新前解包复查内容边界（第二节）。**GitHub Release 标题格式 = `vX.Y.Z`，不带「公开发布」等后缀（issue #5，存量标题已 PATCH）**。
-
-## 五、应用身份与签名（公开版独立）
-
-- **包名**：`com.aigf.app.public`（开发主线版为 `com.aigf.app`）——两版可在同一设备并存，互不覆盖。
-- **应用名**：`月见Moonveil`（桌面图标标签 / 系统设置 / 关于页显示名，issue #5；开发版显示名「月见」，并存仍可区分）。
-- **签名**：`android/app/moonveil-public.jks` 随仓发布（storePassword/keyPassword 均为 `moonveil-public`，alias `moonveil-public`），debug 与 release 构建统一使用（gradle `signingConfigs.pubEdition`）。密钥仅绑定公开包名、随开源仓公开是既定决策，不含敏感意义；换来的是 CI 构建间签名一致——OTA 覆盖安装不再依赖构建机临时 debug key。
-- **整树覆盖同步后必查**：第三节 checklist 的「应用身份改写」三处 + 本节签名配置与 keystore 文件存在性。
+- **包名**：`com.aigf.app.public`——与其它包名的构建并存互不覆盖。
+- **应用名**：`月见Moonveil`（桌面图标 / 系统设置 / 关于页显示名）。
+- **签名**：`android/app/moonveil-public.jks` 随仓发布（storePassword/keyPassword/alias 均为 `moonveil-public`），debug 与 release 统一使用（gradle `signingConfigs.pubEdition`）——换来 CI 构建间签名一致，OTA 覆盖安装不依赖构建机临时 key。
+- **改动必查**：任何触碰 `build.gradle` / `strings.xml` / `capacitor.config.json` / keystore 的 PR，核对身份四件套（applicationId、显示名、签名配置、keystore 存在性）不回归。

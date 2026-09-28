@@ -2839,7 +2839,7 @@ const App = {
     const favs = this.state.favs[gfId] || (this.state.favs[gfId] = []);
     const existing = favs.map(f => `- ${f.id}: ${f.text}`).join('\n');
     const recent = hist.slice(-8)
-      .map(m => (m.role === 'player' ? '他：' : gf.name + '：')
+      .map(m => (m.role === 'player' ? '【用户】' : '【' + gf.name + '】')   // 身份头与主对话同格式（issue #25）：归因判定的锚
         + (m.img || m.imgLost ? '[发了一张图片]' + (m.text ? '\n' : '') : '') + m.text)   // 图片不进记忆管线，占位即可
       .join('\n');
     if (!recent.trim()) return;
@@ -2936,7 +2936,7 @@ ${existing || '（暂无）'}
     const mems = this.state.memories[gfId] || (this.state.memories[gfId] = []);
     const existing = mems.map(m => `- ${m.id}: ${m.text}${m.pinned ? '（置顶，禁止改动）' : ''}`).join('\n');
     const recent = hist.slice(-24)
-      .map(m => (m.role === 'player' ? '他：' : gf.name + '：')
+      .map(m => (m.role === 'player' ? '【用户】' : '【' + gf.name + '】')   // 身份头与主对话同格式（issue #25）
         + (m.img || m.imgLost ? '[发了一张图片]' + (m.text ? '\n' : '') : '') + m.text)   // 图片不进记忆管线，占位即可
       .join('\n');
 
@@ -3238,8 +3238,9 @@ ${favList || '（无）'}`,
   maybeCorrect(gfId, playerText) {
     if (!this.CORR_SIGNAL.test(playerText)) return;
     const existing = this.state.corrections[gfId] || (this.state.corrections[gfId] = this.loadCorrections(gfId));
+    const corrGfName = (this.allGfs()[gfId] || {}).name || '她';
     const recent = (this.state.histories[gfId] || []).slice(-6)
-      .map(m => (m.role === 'player' ? '他：' : '她：') + m.text).join('\n');
+      .map(m => (m.role === 'player' ? '【用户】' : '【' + corrGfName + '】') + m.text).join('\n');   // 身份头同格式（issue #25）
     // fire-and-forget：蒸馏失败静默，不影响聊天
     (async () => {
       const out = await this.smallLLMCall([
@@ -3339,6 +3340,10 @@ ${favList || '（无）'}`,
       { type: 'text', text: textPart || '（发了一张图片）' },
       { type: 'image_url', image_url: { url: dataURL } },
     ];
+    // 隐藏身份头（issue #25）：历史正文多数不带称呼，超长上下文里 role 字段权重不足，
+    // 模型会语义猜「谁说的」导致人称幻觉。双侧加【】头做显式归因（组装时内存态，
+    // 不写入 hist/存档）；防模仿句见下方运行时上下文。提取路径用同一格式（见 extractFavs 等）。
+    const gfName = (this.allGfs()[gfId] || {}).name || '她';
     for (let i = 0; i < recent.length; i++) {
       const m = recent[i];
       if (m.role === 'player') {
@@ -3348,15 +3353,15 @@ ${favList || '（无）'}`,
         if (m.quote) textPart = m.quote + '\n\n' + textPart;
         let content;
         if (m.img && imgAllowed.has(i)) {
-          content = withImage(textPart, m.img);
+          content = withImage('【用户】' + textPart, m.img);
         } else if (m.img) {
-          content = (m.quote ? m.quote + '\n\n' : '') + '[图片]' + (m.text ? '\n' + m.text : '');
+          content = '【用户】' + (m.quote ? m.quote + '\n\n' : '') + '[图片]' + (m.text ? '\n' + m.text : '');
         } else {
-          content = textPart;
+          content = '【用户】' + textPart;
         }
         messages.push({ role: 'user', content });
       }
-      else if (m.role === 'assistant' || m.role === 'gf') messages.push({ role: 'assistant', content: m.text });
+      else if (m.role === 'assistant' || m.role === 'gf') messages.push({ role: 'assistant', content: '【' + gfName + '】' + m.text });
     }
     // 记忆上下文：Correction 规则 + 她的喜好 + 共同回忆（自动提取的本地记忆注入给 agent）
     const memBlock = this.buildMemoryBlock(gfId);
@@ -3376,7 +3381,7 @@ ${favList || '（无）'}`,
       : '';
     messages.push({
       role: 'system',
-      content: `【运行时上下文，必须遵守】\n当前时间：${timeStr}。涉及现在几点、今天日期、星期、纪念日倒计时等一切时间表述时，以此为准；不要编造、不要根据对话间隔推测时间。\n【输出格式指令】检查上一条用户消息：如果你在回复中提到了自己的新喜好（喜欢的花、食物、音乐、电影、小习惯等），在回复末尾单独一行输出：【喜好：以「她」开头的简短概括】。没有提到新的喜好就完全不输出这一行，不要输出任何其他标记。${innerProto}`,
+      content: `【运行时上下文，必须遵守】\n当前时间：${timeStr}。涉及现在几点、今天日期、星期、纪念日倒计时等一切时间表述时，以此为准；不要编造、不要根据对话间隔推测时间。\n【说话人标记】历史消息开头的【用户】/【${gfName}】标记仅供你分辨说话人，据此准确归因（谁说的、谁的喜好、谁的经历），绝不把用户说的话当成自己说的；也绝不在你的回复中复现【用户】【${gfName}】这类标记。\n【输出格式指令】检查上一条用户消息：如果你在回复中提到了自己的新喜好（喜欢的花、食物、音乐、电影、小习惯等），在回复末尾单独一行输出：【喜好：以「她」开头的简短概括】。没有提到新的喜好就完全不输出这一行，不要输出任何其他标记。${innerProto}`,
     });
     // 当前消息：带图时改多模态 content 数组（vision 模型识别图片内容）
     const lastContent = img ? withImage(userMessage, img) : (userMessage || (img ? '[图片]' : ''));

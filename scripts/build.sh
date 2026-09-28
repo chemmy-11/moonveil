@@ -40,8 +40,8 @@ try:
     with zipfile.ZipFile('AI-GF.apk') as z:
         for f in ['js/data.js', 'js/app.js', 'index.html', 'css/style.css', 'css/mobile.css', 'js/version.js', 'css/tokens.css',
                   'assets/fonts/lxgw-wenkai-subset.woff2', 'assets/fonts/noto-serif-sc-subset.woff2', 'assets/fonts/zhuque-fangsong-subset.woff2',
-                  'assets/wanwan-hero.webp', 'assets/wanwan-chat.webp', 'assets/tangtang-hero.webp', 'assets/tangtang-chat.webp',
-                  'assets/jiying-hero.webp', 'assets/jiying-chat.webp', 'assets/jiying.webp',
+                  'assets/wanwan-hero.webp', 'assets/tangtang-hero.webp',
+                  'assets/jiying-hero.webp', 'assets/jiying.webp',
                   'assets/ouyangyue.webp', 'assets/jiangye.webp', 'assets/linle.webp']:
             src = h(open(f, 'rb').read())
             apk = h(z.read('assets/public/' + f))

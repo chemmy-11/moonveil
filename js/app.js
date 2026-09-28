@@ -251,10 +251,12 @@ const App = {
   // 立绘 = 个人主页背景；chatWall = 聊天背景（直接接管 #wall，与主题同级——
   // 自定义主题的用户壁纸仅对无视觉包的角色生效）；头像已直接替换文件。
   // 自建角色（无视觉包）行为与现状完全一致。
+  // 视觉包（issue #65 重定义）：hero = 角色聊天壁纸（竖版立绘直接作壁纸）；
+  // 原 chatWall 聊天壁纸退役；个人主页回归纯白样式（无立绘背景）
   VISUAL_PACKS: {
-    wanwan:  { hero: 'assets/wanwan-hero.webp',  chatWall: 'assets/wanwan-chat.webp' },
-    tangtang: { hero: 'assets/tangtang-hero.webp', chatWall: 'assets/tangtang-chat.webp' },
-    jiying: { hero: 'assets/jiying-hero.webp', chatWall: 'assets/jiying-chat.webp' },
+    wanwan:  { hero: 'assets/wanwan-hero.webp' },
+    tangtang: { hero: 'assets/tangtang-hero.webp' },
+    jiying: { hero: 'assets/jiying-hero.webp' },
   },
   // ═══ 字体偏好（issue #5）：四档选项，key 存 localStorage('aigf_font') ═══
   FONT_OPTIONS: [
@@ -1937,13 +1939,14 @@ const App = {
     // 不再自动 focus 输入框（issue #53）：移动端切会话弹键盘打断浏览；用户点击输入框时再聚焦
   },
 
-  // ═══ 角色专属主题壁纸（issue #69 改造）═══
-  // 仅在「角色专属」主题下生效：当前角色有视觉包 → chatWall 接管 #wall；无包角色 → 无壁纸。
-  // 其它主题（纯白/纯黑/自定义）完全不受角色包影响。
+  // ═══ 角色专属主题壁纸（issue #65 重定义）═══
+  // 仅在「角色专属」主题下生效：当前角色有视觉包 → **立绘 hero 作聊天壁纸**接管 #wall；
+  // 无包角色 → 无壁纸。其它主题（纯白/纯黑/自定义）完全不受角色包影响。
+  // 个人主页回归纯白样式——立绘不再上主页（has-hero 门控已退役）。
   applyGfWall() {
     if (document.documentElement.getAttribute('data-theme') !== 'gf') return;
     const pack = this.getVisualPack(this.state.currentGf);
-    this.applyWallInline(pack && pack.chatWall ? pack.chatWall : null);
+    this.applyWallInline(pack && pack.hero ? pack.hero : null);
   },
 
   // ═══ 视觉包通用注册表（issue #99 阶段一）═══
@@ -1952,7 +1955,11 @@ const App = {
   getVisualPack(gfId) {
     if (this.VISUAL_PACKS[gfId]) return this.VISUAL_PACKS[gfId];
     const cg = this.state.customGfs[gfId];
-    if (cg && cg.visual && (cg.visual.hero || cg.visual.chatWall)) return cg.visual;
+    if (cg && cg.visual && (cg.visual.hero || cg.visual.chatWall)) {
+      // 旧自建数据 chatWall 语义已废——统一映射到 hero（新语义=聊天壁纸）
+      const v = cg.visual;
+      return { hero: v.hero || v.chatWall };
+    }
     return null;
   },
   // 设置/清除自建角色的专属视觉包（内置 id 忽略——静态包不可覆盖）
@@ -4371,9 +4378,6 @@ ${favList || '（无）'}`,
     if (!body) return;
     const p = Math.min(1, Math.max(0, body.scrollTop / 110));
     this.el.profilePanel.style.setProperty('--pc', p.toFixed(3));
-    // 次段进度 --pc2（issue #60）：header 收满后继续上滑 260px 区间 → 分区卡渐隐收纳
-    const p2 = Math.min(1, Math.max(0, (body.scrollTop - 110) / 260));
-    this.el.profilePanel.style.setProperty('--pc2', p2.toFixed(3));
   },
   // Android 返回手势/按键（issue #95）：按关闭优先级栈逐层关浮层，一次返回关一层；
   // 无浮层时沿用 Android 惯例——历史可退则退，否则退出 App（不改退出语义）。
@@ -4411,15 +4415,10 @@ ${favList || '（无）'}`,
     const gf = this.allGfs()[this.state.currentGf];
     if (!gf || !gf.profile) return;
     const p = gf.profile;
-    // 角色立绘背景（issue #69 改造）：仅在「角色专属」主题下，有视觉包的角色显示立绘
-    // issue #99 阶段一：门控走通用注册表，自建角色的 visual 字段同样生效
-    const pack = this.getVisualPack(this.state.currentGf);
-    const showHero = document.documentElement.getAttribute('data-theme') === 'gf' && !!(pack && pack.hero);
+    // 主页回归纯白样式（issue #65）：立绘已转作聊天壁纸，主页不再有立绘背景
+    //（has-hero 门控与 #10/#11/#53/#60 一族立绘特调全部退役）
     document.body.classList.add('profile-open');   // #55：主页打开时隐藏聊天区 top-bar（防状态栏区透出灰条）
-    this.el.profilePanel.classList.toggle('has-hero', showHero);
-    this.el.profilePanel.style.backgroundImage = showHero ? `url("${pack.hero}")` : '';
     this.el.profilePanel.style.setProperty('--pc', 0);   // 收起状态复位（issue #85）
-    this.el.profilePanel.style.setProperty('--pc2', 0);   // 分区卡收纳复位（issue #60）
     this.el.profileBody.scrollTop = 0;
     this.el.profileAvatar.src = gf.avatar;
     this.el.profileName.textContent = gf.name;
@@ -4539,7 +4538,6 @@ ${favList || '（无）'}`,
     document.body.classList.remove('profile-open');   // #55：恢复聊天区 top-bar
     this.el.profilePanel.classList.add('hidden');
     this.el.profileOverlay.classList.add('hidden');
-    this.el.profilePanel.classList.remove('has-hero');   // 立绘背景随关闭清除（issue #69）
     this.el.profilePanel.style.backgroundImage = '';
     this.closeMemMenu();
   },

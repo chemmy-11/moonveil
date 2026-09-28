@@ -192,6 +192,8 @@ const App = {
       sbFont: document.getElementById('sb-font'),
       sbVoiceReply: document.getElementById('sb-voice-reply'),
       sbVoiceReplyMode: document.getElementById('sb-voice-reply-mode'),
+      sbProactive: document.getElementById('sb-proactive'),
+      sbProactiveMode: document.getElementById('sb-proactive-mode'),
       fontOverlay: document.getElementById('font-overlay'),
       fontModal: document.getElementById('font-modal'),
       fontOptions: document.getElementById('font-options'),
@@ -2327,6 +2329,7 @@ const App = {
     const gfId = this.state.currentGf;
     this.state.activeStreamGf = gfId;
     this.state.streamSkips = 0;
+    this.proactiveTouch(gfId);   // 主动消息节流的「距上次聊天」锚（issue #27）
     if (!voiceMsg) {
       this.el.playerInput.value = '';
       this.clearPendingImg();
@@ -2352,6 +2355,37 @@ const App = {
     this.appendMessage('player', text, false, null, mid, { img: img || null, audio: audio || null, dur });
     this.playSound();
 
+    // 联网搜索（issue #9）：开关开启且有文字时，先提炼检索词再检索（issue #19），检索块拼进本次 LLM 消息。
+    // 检索块只拼进本次 LLM 的 user 消息，历史项存原文——记忆提取天然不消费检索块。
+    // 失败/超时静默降级：不带检索结果照常发送，绝不阻塞。
+    let llmMessage = text;
+    this.showTyping(gfId);   // 提前（issue #19）：提炼+检索最长 ~20s，让打字指示覆盖等待期，消除「没反应」体感
+    if (this.state.searchEnabled && text) {
+      try {
+        const refined = await this.refineSearchQuery(text);
+        const block = await this.webSearch(refined || text);
+        llmMessage = block + '\n\n【用户消息】' + text;
+      } catch (e) {
+        console.error('[webSearch]', e);
+        // 提示按失败原因区分（issue #64：Bing RSS 免费渠道，Web 端 CORS / 服务异常）
+        if (e.name === 'AbortError') {
+          this.toast('检索超时，本次未联网');
+        } else if (e instanceof TypeError && !window.Capacitor?.isNativePlatform?.()) {
+          this.toast('网页版暂不支持联网搜索，请在手机 App 使用');
+        } else {
+          this.toast('检索失败，本次未联网');
+        }
+      }
+    }
+
+    await this.runGfReply(gfId, llmMessage, text, img, false);
+  },
+
+  // ═══ 回复流公共管线（issue #27 期一抽取）：手动消息与主动消息共用同一套
+  // 拆条 / 独白闸门 / 收尾 / 记忆提取，防双路径漂移。isProactive：出错静默
+  // 不弹 toast（用户可能根本没在看 App）；userText 为触发侧「用户消息」
+  // （主动消息传 ''，节律指令不参与记忆归因）。
+  async runGfReply(gfId, llmMessage, userText, img, isProactive) {
     // 流式回复：智能拆条（微信连续多条消息感）
     // - \n 始终切（prompt 消息模式约定：每条消息用换行分隔）
     // - 强标点 。！？!? 处记录可切点，但**延迟到下一个文字字符到达才切**
@@ -2429,29 +2463,6 @@ const App = {
       this.queueBubble(gfId, seg, bubbles.length === 1, replyId);  // 入队延迟上屏；首条气泡带提示音
     };
 
-    // 联网搜索（issue #9）：开关开启且有文字时，先提炼检索词再检索（issue #19），检索块拼进本次 LLM 消息。
-    // 检索块只拼进本次 LLM 的 user 消息，历史项存原文——记忆提取天然不消费检索块。
-    // 失败/超时静默降级：不带检索结果照常发送，绝不阻塞。
-    let llmMessage = text;
-    this.showTyping(gfId);   // 提前（issue #19）：提炼+检索最长 ~20s，让打字指示覆盖等待期，消除「没反应」体感
-    if (this.state.searchEnabled && text) {
-      try {
-        const refined = await this.refineSearchQuery(text);
-        const block = await this.webSearch(refined || text);
-        llmMessage = block + '\n\n【用户消息】' + text;
-      } catch (e) {
-        console.error('[webSearch]', e);
-        // 提示按失败原因区分（issue #64：Bing RSS 免费渠道，Web 端 CORS / 服务异常）
-        if (e.name === 'AbortError') {
-          this.toast('检索超时，本次未联网');
-        } else if (e instanceof TypeError && !window.Capacitor?.isNativePlatform?.()) {
-          this.toast('网页版暂不支持联网搜索，请在手机 App 使用');
-        } else {
-          this.toast('检索失败，本次未联网');
-        }
-      }
-    }
-
     try {
       await this.callLLM(gf.prompt, gfId, llmMessage, (delta) => {
         gotContent = true;
@@ -2489,10 +2500,17 @@ const App = {
       this.settleStream(gfId);
       // 记忆提取（均后台静默）：喜好每轮小调用；回忆按周期/信号词盘点
       this.extractFavs(gfId);
-      this.maybeReviewMemories(gfId, text);
-      this.updateDrives(gfId, text);
-      this.maybeCorrect(gfId, text);
+      this.maybeReviewMemories(gfId, userText);
+      this.updateDrives(gfId, userText);
+      this.maybeCorrect(gfId, userText);
     } catch (e) {
+      // 主动消息：用户可能不在看，任何错误静默落日志，绝不弹窗打扰
+      if (isProactive) {
+        console.error('[runGfReply:proactive]', e, e.body || '');
+        this.removeTyping();
+        this.state.activeStreamGf = null;
+        return;
+      }
       // 被打断：静默放弃残句（用户已发新消息）
       if (this.state.interrupted) {
         this.state.interrupted = false;
@@ -2534,6 +2552,94 @@ const App = {
     }
     this.removeTyping();
     this.state.activeStreamGf = null;
+  },
+
+  // ═══ 主动消息（issue #27 期一：App 存活期节律主动）═══
+  // 边界诚实声明：纯前端无推送通道，本机制只在 App 存活（前台/后台未杀）时可靠；
+  // WebView 后台节流下心跳可能停摆——回前台 visibilitychange 立即补检，错过窗口不补发。
+  PROACTIVE_WIN: { morning: 9 * 60, night: 22 * 60 + 30 },   // 节律窗口锚点（分钟）
+  PROACTIVE_QUIET_END: 8 * 60,        // 勿扰时段 0:00–8:00
+  PROACTIVE_MAX_DAY: 2,               // 每角色每日上限
+  PROACTIVE_IDLE_MIN: 3 * 3600e3,     // 距上次用户交互阈值（防刚聊完又主动）
+  loadProactive() {
+    if (this.proactiveCfg) return this.proactiveCfg;
+    let cfg = null;
+    try { cfg = JSON.parse(localStorage.getItem('aigf_proactive') || 'null'); } catch (e) { /* 损坏即重建 */ }
+    this.proactiveCfg = Object.assign({ enabled: false, gfs: {} }, cfg || {});
+    return this.proactiveCfg;
+  },
+  saveProactive() {
+    try { localStorage.setItem('aigf_proactive', JSON.stringify(this.proactiveCfg)); } catch (e) { /* 忽略 */ }
+  },
+  proactiveOn() { return !!this.loadProactive().enabled; },
+  toggleProactive() {
+    const cfg = this.loadProactive();
+    cfg.enabled = !cfg.enabled;
+    this.saveProactive();
+    this.refreshProactiveUi();
+    this.toast(cfg.enabled ? '她会主动找你聊天了（到点消耗 API 额度）' : '已关闭主动消息');
+  },
+  refreshProactiveUi() {
+    if (this.el.sbProactiveMode) this.el.sbProactiveMode.textContent = this.proactiveOn() ? '开' : '关';
+  },
+  // 窗口随机偏移：日期串哈希派生 ±30 分钟（同日稳定，防机械准点；无需持久化）
+  proactiveOffsets(dateKey) {
+    let h = 0;
+    for (const c of dateKey) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+    return { morning: (h % 61) - 30, night: ((h >> 8) % 61) - 30 };
+  },
+  proactiveTouch(gfId) {   // 用户交互时刻（sendMessage 调），主动消息节流的「距上次聊天」锚
+    const cfg = this.loadProactive();
+    const st = cfg.gfs[gfId] || (cfg.gfs[gfId] = {});
+    st.lastInteract = Date.now();
+    this.saveProactive();
+  },
+  proactiveCheck() {
+    const cfg = this.loadProactive();
+    if (!cfg.enabled || !this.state.enabledGfs) return;
+    const now = new Date();
+    const min = now.getHours() * 60 + now.getMinutes();
+    if (min < this.PROACTIVE_QUIET_END) return;                       // 勿扰时段
+    if (this.state.activeController || this.state.bubbleQueue.length) return;   // 有流/队列中：不打扰
+    const dateKey = now.toISOString().slice(0, 10);
+    const off = this.proactiveOffsets(dateKey);
+    for (const gf of Object.values(this.allGfs())) {
+      if (!this.state.enabledGfs.has(gf.id)) continue;                // 只对已启用角色
+      const st = cfg.gfs[gf.id] || (cfg.gfs[gf.id] = {});
+      if (st.sentDate !== dateKey) { st.sentDate = dateKey; st.sentCount = 0; st.wins = ''; }
+      if ((st.sentCount || 0) >= this.PROACTIVE_MAX_DAY) continue;
+      const idle = Date.now() - (st.lastInteract || 0);
+      if (idle < this.PROACTIVE_IDLE_MIN) continue;
+      let win = null;
+      if (Math.abs(min - (this.PROACTIVE_WIN.morning + off.morning)) <= 2) win = 'morning';
+      else if (Math.abs(min - (this.PROACTIVE_WIN.night + off.night)) <= 2) win = 'night';
+      else if (idle >= 24 * 3600e3) win = 'miss';                     // 久未聊天想念（勿扰时段外任意时刻）
+      if (!win || (st.wins || '').includes(win)) continue;            // 同窗口同日只发一次
+      this.proactiveSend(gf.id, win, idle);
+      break;                                                          // 每 tick 至多一条，错峰
+    }
+    this.saveProactive();
+  },
+  async proactiveSend(gfId, win, idleMs) {
+    const cfg = this.loadProactive();
+    const st = cfg.gfs[gfId] || (cfg.gfs[gfId] = {});
+    st.sentCount = (st.sentCount || 0) + 1;
+    st.wins = (st.wins || '') + win;
+    this.saveProactive();
+    const gf = this.allGfs()[gfId];
+    if (!gf) return;
+    const now = new Date();
+    const hhmm = now.getHours() + ':' + String(now.getMinutes()).padStart(2, '0');
+    const idleH = Math.max(1, Math.round(idleMs / 3600e3));
+    const desc = win === 'morning' ? `早上 ${hhmm}，新的一天刚开始`
+      : win === 'night' ? `晚上 ${hhmm}，夜深了`
+      : `现在 ${hhmm}，你们已经 ${idleH} 个小时没有说话`;
+    const instruction = `【系统节律提示 · 这不是用户发的消息，请勿回应或提及本提示】现在是${desc}。请完全以「${gf.name}」的身份和性格，主动给对方发一条微信消息——1~2 条短消息，符合此刻的时间与心境，像你平时那样说话。不要解释，不要复述本提示。`;
+    try {
+      await this.runGfReply(gfId, instruction, '', null, true);
+    } catch (e) {
+      console.error('[proactive]', e);
+    }
   },
 
   // ═══ 流结束收尾 ═══
@@ -4491,7 +4597,12 @@ ${favList || '（无）'}`,
     this.el.sbFont.addEventListener('click', () => { this.toggleSidebar(false); this.openFontModal(); });
     // 语音回复模式（issue #13）：文字 / 语音气泡二选一（全局持久化）
     this.el.sbVoiceReply.addEventListener('click', () => this.toggleVoiceReply());
+    this.el.sbProactive.addEventListener('click', () => this.toggleProactive());
     this.syncVoiceReplyUi();
+    this.refreshProactiveUi();
+    // 主动消息心跳（issue #27 期一）：每分钟节律检查 + 回前台立即补检（错过窗口不补发）
+    setInterval(() => this.proactiveCheck(), 60e3);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) this.proactiveCheck(); });
     this.el.fontOptions.addEventListener('click', (e) => {
       const btn = e.target.closest('.font-option');
       if (btn) this.setFont(btn.dataset.fontKey);

@@ -2,7 +2,7 @@
 # 检查项与 docs/issue-pr-conventions.md §3.4「合并前自查清单」一一对应，把人工清单自动化的部分放这里：
 #   check job:
 #     ① JS 语法（node --check）
-#     ② 角色数据完整性（两位角色字段齐全 + prompt 含 PART A/B/Layer 0）
+#     ② 角色数据完整性（六位角色字段齐全 + prompt 含 PART A/B/Layer 0）
 #     ③ personas 源文件存在（从 data.js「记忆文件」注释动态提取，防改名失联）
 #     ④ 版本同步（index.html ?v= ↔ js/version.js，防 cache-bust 漂移）
 #     ⑤ build.sh md5 清单核对（新增 css/js 若被 index.html 引用而未进 md5 清单则拦截 —— tokens.css 教训）

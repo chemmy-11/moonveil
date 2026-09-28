@@ -597,23 +597,27 @@ const App = {
     }
   },
   // ═══ 深度思考开关（issue #74）：关 = thinking disabled（响应更快），开 = enabled + high ═══
+  // 自定义供应商同样可用（issue #49）：独白协议是纯 content 约定与通道无关，
+  // thinking 字段按通道分别组装（见 callLLM）；自定义通道 effort 固定 high（有的模型无 max 档）
   deepThinkingOn() {
     return localStorage.getItem('aigf_deep_thinking') !== '0';   // 默认开
   },
   toggleThinking() {
-    if (this.useCustomLlm()) { this.toast('自定义供应商下深度思考不可用（thinking 为 DeepSeek 系扩展参数）'); return; }
     const on = !this.deepThinkingOn();
     try { localStorage.setItem('aigf_deep_thinking', on ? '1' : '0'); } catch (e) { /* 忽略 */ }
     this.refreshThinkUi();
-    this.toast(on ? '深度思考已开启' : '深度思考已关闭（回复更快）');
+    if (on && this.useCustomLlm()) this.toast('深度思考已开启（自定义供应商：发送 thinking + effort high；若对话报错请关掉它）');
+    else this.toast(on ? '深度思考已开启' : '深度思考已关闭（回复更快）');
   },
   refreshThinkUi() {
     const on = this.deepThinkingOn();
-    const locked = this.useCustomLlm();   // 自定义供应商：开关置灰（issue #18）
     if (this.el.thinkPill) {
-      this.el.thinkPill.classList.toggle('active', on && !locked);
-      this.el.thinkPill.classList.toggle('locked', locked);
-      this.el.thinkPill.setAttribute('aria-pressed', (on && !locked) ? 'true' : 'false');
+      this.el.thinkPill.classList.toggle('active', on);
+      this.el.thinkPill.classList.remove('locked');
+      this.el.thinkPill.setAttribute('aria-pressed', on ? 'true' : 'false');
+      this.el.thinkPill.title = this.useCustomLlm()
+        ? '深度思考 · 自定义供应商：开 = 发送 thinking + effort high（网关不认未知字段时可能 400，可先「测试连接」验证）；关 = 不发送（最兼容）'
+        : '深度思考（关闭后响应更快）';
     }
   },
   // ═══ 清空输入（issue #74）：× 清除文字与待发图片 ═══
@@ -3597,7 +3601,9 @@ ${favList || '（无）'}`,
     const timeStr = `${now.getFullYear()}年${now.getMonth() + 1}月${now.getDate()}日（周${week}）${pad(now.getHours())}:${pad(now.getMinutes())}`;
     // 深度思考开启时注入内心独白协议（issue #12）：独白走正文 <inner> 定界段，
     // 模型 reasoning_content 思维链不再入库/展示（口吻与结构不可控，出戏且可能暴露提示词写法）。
-    const innerProto = (this.deepThinkingOn() && !useCustom)
+    // 独白协议随深度思考开关注入，不再排除自定义通道（issue #49）：
+    // <inner> 是纯 content 流定界约定，与 thinking 扩展字段无关——第三方模型同样可遵循
+    const innerProto = this.deepThinkingOn()
       ? '\n【内心独白】每次回复的最开头，先写一段内心独白，用 <inner> 和 </inner> 包起来：第一人称「我」、中文、一两句话，写你此刻心里真实的想法或情绪，贴合你的性格，像自言自语，不是对玩家说的话；不要写成分析、推理或回复草稿。写完 </inner> 换行，再开始正式回复正文。除开头这一段外，正文任何位置不要再出现 <inner> 标记。'
       : '';
     messages.push({
@@ -3615,12 +3621,20 @@ ${favList || '（无）'}`,
       temperature: cfg.temperature,
       max_tokens: cfg.max_tokens,
     };
-    // thinking / reasoning_effort 为 DeepSeek 系扩展参数（issue #18）：仅官方通道发送；
-    // 严格 OpenAI 兼容网关可能对未知字段 400，自定义供应商下默认完全不发送
-    if (!useCustom) {
-      // 深度思考开关（issue #74 用户可控 / #34 显式参数）：关态显式 disabled，开态 enabled+high
-      body.thinking = this.deepThinkingOn() ? cfg.thinking : { type: 'disabled' };
-      if (this.deepThinkingOn()) body.reasoning_effort = cfg.reasoning_effort;
+    // thinking / reasoning_effort 为 DeepSeek 系扩展参数，按通道分别组装（issue #49）：
+    // - 官方通道：现状不变——关态显式 disabled，开态 enabled + reasoning_effort 现值
+    // - 自定义通道：开 = enabled + effort 固定 high（owner 指定：有的模型没有 max 档）；
+    //   关 = 完全不发字段（disabled 亦非标，不发是最兼容形态——严格网关对未知字段可能 400，
+    //   用户出 400 后关掉深度思考即回落，pill title 有说明）
+    const thinkOn = this.deepThinkingOn();
+    if (useCustom) {
+      if (thinkOn) {
+        body.thinking = { type: 'enabled' };
+        body.reasoning_effort = 'high';
+      }
+    } else {
+      body.thinking = thinkOn ? cfg.thinking : { type: 'disabled' };
+      if (thinkOn) body.reasoning_effort = cfg.reasoning_effort;
     }
 
     const controller = new AbortController();

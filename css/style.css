@@ -1413,6 +1413,14 @@ body.waiting #send-btn { animation: send-glow 1.8s ease-in-out infinite; }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
+/* 可点击轻提示（issue #26 自动更新提示 → 点进更新弹窗） */
+#toast.toast-action {
+  cursor: pointer;
+  background: color-mix(in srgb, var(--ok-color, #5F9E7F) 72%, rgba(30, 34, 50, .9));
+  border-color: rgba(255, 255, 255, .2);
+}
+#toast.toast-action:active { opacity: .85; }
+
 /* 壁纸切换淡入（JS 在 toggleTheme 时触发） */
 #wall.theme-fade { animation: wall-fade .5s var(--ease-out-soft); }
 @keyframes wall-fade {

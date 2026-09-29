@@ -2649,7 +2649,7 @@ const App = {
   // WebView 后台节流下心跳可能停摆——回前台 visibilitychange 立即补检，错过窗口不补发。
   PROACTIVE_WIN: { morning: 9 * 60, night: 22 * 60 + 30 },   // 节律窗口锚点（分钟）
   PROACTIVE_QUIET_END: 8 * 60,        // 勿扰时段 0:00–8:00
-  PROACTIVE_MAX_DAY: 2,               // 每角色每日上限
+  PROACTIVE_MAX_DAY: 3,               // 每角色每日上限（owner 2026-09-29 调整）
   PROACTIVE_IDLE_MIN: 3 * 3600e3,     // 距上次用户交互阈值（防刚聊完又主动）
   loadProactive() {
     if (this.proactiveCfg) return this.proactiveCfg;

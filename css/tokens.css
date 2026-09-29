@@ -182,7 +182,7 @@ html[data-theme="custom"] .modal-overlay { background: rgba(4, 6, 12, .55); }
 /* ═══ 角色专属主题（issue #69 改造）═══
    与纯白/纯黑/自定义同级；选中后随当前角色切换整套视觉：
    壁纸/立绘由 JS 按 VISUAL_PACKS 应用，本块负责 UI token（气泡、卡片、输入区）。
-   透明度基准 .78（issue #65：气泡/输入卡/顶栏统一，晚晚 .86 再降 10%）
+   透明度基准 .62（issue #65：气泡/输入卡/顶栏统一，晚晚 .86 再降 10%）
    有包角色：各自主题色系全面适配（player-grad 已带 78% alpha——不定义即回退
    var(--gf-grad)）；无包角色（自建）：中性磨砂变体，不套任何角色色 */
 html[data-theme="gf"] {
@@ -190,90 +190,90 @@ html[data-theme="gf"] {
 }
 html[data-theme="gf"] body[data-gf] {
   /* 无包角色兜底：中性（与 custom 主题的磨砂思路一致，基底偏暖白） */
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #8E8A96 78%, transparent), color-mix(in srgb, #74707C 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #8E8A96 62%, transparent), color-mix(in srgb, #74707C 62%, transparent));
   --on-player: #FFFFFF;
   --player-shadow: 0 3px 12px rgba(90, 88, 100, .2);
-  --bubble-gf: rgba(255, 255, 255, .78);
+  --bubble-gf: rgba(255, 255, 255, .62);
   --bubble-gf-border: rgba(146, 156, 180, .16);
 }
 /* ─── 苏晚晚：暖粉系 ─── */
 html[data-theme="gf"] body[data-gf="wanwan"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #EDC2D8 78%, transparent), color-mix(in srgb, #D993B4 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #EDC2D8 62%, transparent), color-mix(in srgb, #D993B4 62%, transparent));
   --on-player: #4A3440;
   --player-shadow: 0 3px 14px rgba(217, 147, 180, .35);
-  --bubble-gf: rgba(255, 252, 253, .78);
+  --bubble-gf: rgba(255, 252, 253, .62);
   --bubble-gf-border: rgba(217, 147, 180, .3);
   --card-bg: rgba(255, 252, 253, .66);
   --card-border: rgba(255, 255, 255, .8);
   --bg-soft: rgba(255, 250, 252, .6);
-  --input-bg: rgba(255, 251, 252, .78);
+  --input-bg: rgba(255, 251, 252, .62);
   --danger: #C9869A;
 }
 /* ─── 唐苓：暖橙系 ─── */
 html[data-theme="gf"] body[data-gf="tangtang"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #F0C68E 78%, transparent), color-mix(in srgb, #E0B06C 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #F0C68E 62%, transparent), color-mix(in srgb, #E0B06C 62%, transparent));
   --on-player: #4E4022;
   --player-shadow: 0 3px 14px rgba(224, 176, 108, .36);
-  --bubble-gf: rgba(255, 252, 246, .78);
+  --bubble-gf: rgba(255, 252, 246, .62);
   --bubble-gf-border: rgba(224, 176, 108, .32);
   --card-bg: rgba(255, 252, 246, .68);
   --card-border: rgba(255, 255, 255, .82);
   --bg-soft: rgba(255, 250, 240, .6);
-  --input-bg: rgba(255, 251, 246, .78);
+  --input-bg: rgba(255, 251, 246, .62);
   --danger: #C9947A;
 }
 /* ─── 季萤：雾蓝系（issue #34：#72 时 gf 专属块只建了晚晚/唐苓，后续角色漏配——
        落兜底中性灰紫致玩家气泡/发送键发灰、输入卡透明度不一致。以下四块同构补齐，
        十 token 结构对齐上两块；渐变/深字色与 style.css 基础色板同源；
-       透明度锚 .78 级（对齐晚晚/唐苓输入卡） ─── */
+       透明度锚 .62 级（对齐晚晚/唐苓输入卡） ─── */
 html[data-theme="gf"] body[data-gf="jiying"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #A8BCD8 78%, transparent), color-mix(in srgb, #8FA8C9 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #A8BCD8 62%, transparent), color-mix(in srgb, #8FA8C9 62%, transparent));
   --on-player: #2F3B52;
   --player-shadow: 0 3px 14px rgba(143, 168, 201, .36);
-  --bubble-gf: rgba(250, 252, 255, .78);
+  --bubble-gf: rgba(250, 252, 255, .62);
   --bubble-gf-border: rgba(143, 168, 201, .3);
   --card-bg: rgba(250, 252, 255, .68);
   --card-border: rgba(255, 255, 255, .82);
   --bg-soft: rgba(248, 250, 254, .6);
-  --input-bg: rgba(249, 251, 255, .78);
+  --input-bg: rgba(249, 251, 255, .62);
   --danger: #8F9DBA;
 }
 /* ─── 欧阳越：雾青系（issue #34 同构补齐） ─── */
 html[data-theme="gf"] body[data-gf="ouyangyue"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #9CB7C0 78%, transparent), color-mix(in srgb, #7C9DA8 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #9CB7C0 62%, transparent), color-mix(in srgb, #7C9DA8 62%, transparent));
   --on-player: #2B3E46;
   --player-shadow: 0 3px 14px rgba(124, 157, 168, .36);
-  --bubble-gf: rgba(249, 253, 254, .78);
+  --bubble-gf: rgba(249, 253, 254, .62);
   --bubble-gf-border: rgba(124, 157, 168, .3);
   --card-bg: rgba(249, 253, 254, .68);
   --card-border: rgba(255, 255, 255, .82);
   --bg-soft: rgba(246, 252, 253, .6);
-  --input-bg: rgba(248, 252, 253, .78);
+  --input-bg: rgba(248, 252, 253, .62);
   --danger: #7FA3A8;
 }
 /* ─── 江野：赭棕系（issue #34 同构补齐） ─── */
 html[data-theme="gf"] body[data-gf="jiangye"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #C8A684 78%, transparent), color-mix(in srgb, #B08968 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #C8A684 62%, transparent), color-mix(in srgb, #B08968 62%, transparent));
   --on-player: #46332A;
   --player-shadow: 0 3px 14px rgba(176, 137, 104, .36);
-  --bubble-gf: rgba(255, 252, 248, .78);
+  --bubble-gf: rgba(255, 252, 248, .62);
   --bubble-gf-border: rgba(176, 137, 104, .32);
   --card-bg: rgba(255, 252, 248, .68);
   --card-border: rgba(255, 255, 255, .82);
   --bg-soft: rgba(255, 250, 242, .6);
-  --input-bg: rgba(255, 251, 246, .78);
+  --input-bg: rgba(255, 251, 246, .62);
   --danger: #BC8A6E;
 }
 /* ─── 林乐：芥末黄系（issue #34 同构补齐） ─── */
 html[data-theme="gf"] body[data-gf="linle"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #E0C375 78%, transparent), color-mix(in srgb, #CFA84C 78%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #E0C375 62%, transparent), color-mix(in srgb, #CFA84C 62%, transparent));
   --on-player: #4A3D1E;
   --player-shadow: 0 3px 14px rgba(207, 168, 76, .36);
-  --bubble-gf: rgba(255, 253, 246, .78);
+  --bubble-gf: rgba(255, 253, 246, .62);
   --bubble-gf-border: rgba(207, 168, 76, .34);
   --card-bg: rgba(255, 253, 246, .68);
   --card-border: rgba(255, 255, 255, .82);
   --bg-soft: rgba(255, 251, 240, .6);
-  --input-bg: rgba(255, 252, 244, .78);
+  --input-bg: rgba(255, 252, 244, .62);
   --danger: #C29B58;
 }

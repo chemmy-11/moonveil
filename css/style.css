@@ -225,7 +225,7 @@ html[data-theme="black"] :is(#top-bar, #sidebar, #input-plus-menu, #voice-menu, 
    形成灰色长条——visibility 不触发重排，closeProfile 移除 class 即恢复 */
 body.profile-open #top-bar { visibility: hidden; }
 /* gf 主题顶栏透明度对齐统一基准 .78（issue #65）；blur 保留维持层次 */
-html[data-theme="gf"] #top-bar { background: color-mix(in srgb, var(--card-bg) 78%, transparent); }
+html[data-theme="gf"] #top-bar { background: color-mix(in srgb, var(--card-bg) 62%, transparent); }
 #top-bar {
   height: var(--topbar-h);
   flex: none;

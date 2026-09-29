@@ -198,7 +198,7 @@ html[data-theme="gf"] body[data-gf] {
 }
 /* ─── 苏晚晚：暖粉系 ─── */
 html[data-theme="gf"] body[data-gf="wanwan"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #EDC2D8 62%, transparent), color-mix(in srgb, #D993B4 62%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #EDC2D8 78%, transparent), color-mix(in srgb, #D993B4 78%, transparent));
   --on-player: #4A3440;
   --player-shadow: 0 3px 14px rgba(217, 147, 180, .35);
   --bubble-gf: rgba(255, 252, 253, .62);
@@ -208,10 +208,11 @@ html[data-theme="gf"] body[data-gf="wanwan"] {
   --bg-soft: rgba(255, 250, 252, .6);
   --input-bg: rgba(255, 251, 252, .62);
   --danger: #C9869A;
+  --bubble-player-bg: rgba(255, 252, 253, .62);
 }
 /* ─── 唐苓：暖橙系 ─── */
 html[data-theme="gf"] body[data-gf="tangtang"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #F0C68E 62%, transparent), color-mix(in srgb, #E0B06C 62%, transparent));
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #F0C68E 78%, transparent), color-mix(in srgb, #E0B06C 78%, transparent));
   --on-player: #4E4022;
   --player-shadow: 0 3px 14px rgba(224, 176, 108, .36);
   --bubble-gf: rgba(255, 252, 246, .62);
@@ -221,21 +222,24 @@ html[data-theme="gf"] body[data-gf="tangtang"] {
   --bg-soft: rgba(255, 250, 240, .6);
   --input-bg: rgba(255, 251, 246, .62);
   --danger: #C9947A;
+  --bubble-player-bg: rgba(255, 252, 246, .62);
 }
 /* ─── 季萤：雾蓝系（issue #34：#72 时 gf 专属块只建了晚晚/唐苓，后续角色漏配——
        落兜底中性灰紫致玩家气泡/发送键发灰、输入卡透明度不一致。以下四块同构补齐，
        十 token 结构对齐上两块；渐变/深字色与 style.css 基础色板同源；
        透明度锚 .62 级（对齐晚晚/唐苓输入卡） ─── */
 html[data-theme="gf"] body[data-gf="jiying"] {
-  --player-grad: linear-gradient(135deg, color-mix(in srgb, #A8BCD8 62%, transparent), color-mix(in srgb, #8FA8C9 62%, transparent));
+  /* 夜景暗壁纸：全套透明度提实保对比（issue：部分字/符号看不清） */
+  --player-grad: linear-gradient(135deg, color-mix(in srgb, #A8BCD8 85%, transparent), color-mix(in srgb, #8FA8C9 85%, transparent));
   --on-player: #2F3B52;
   --player-shadow: 0 3px 14px rgba(143, 168, 201, .36);
-  --bubble-gf: rgba(250, 252, 255, .62);
+  --bubble-gf: rgba(250, 252, 255, .78);
+  --bubble-player-bg: rgba(250, 252, 255, .78);
   --bubble-gf-border: rgba(143, 168, 201, .3);
   --card-bg: rgba(250, 252, 255, .68);
   --card-border: rgba(255, 255, 255, .82);
   --bg-soft: rgba(248, 250, 254, .6);
-  --input-bg: rgba(249, 251, 255, .62);
+  --input-bg: rgba(249, 251, 255, .78);
   --danger: #8F9DBA;
 }
 /* ─── 欧阳越：雾青系（issue #34 同构补齐） ─── */

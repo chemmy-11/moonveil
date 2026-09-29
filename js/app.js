@@ -2662,8 +2662,22 @@ const App = {
     try { localStorage.setItem('aigf_proactive', JSON.stringify(this.proactiveCfg)); } catch (e) { /* 忽略 */ }
   },
   proactiveOn() { return !!this.loadProactive().enabled; },
-  toggleProactive() {
+  async toggleProactive() {
     const cfg = this.loadProactive();
+    if (!cfg.enabled) {
+      // 开启前先过通知权限（issue #41：Android 13+ 需运行时授权——未授权时排程会
+      // 静默失败「Notifications not enabled」，用户以为开了却永远收不到）
+      try {
+        const cap = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications;
+        if (cap && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+          const r = await cap.requestPermissions();
+          if (r && r.display && r.display !== 'granted') {
+            this.toast('需要通知权限才能收到她的主动消息，请在系统设置中开启');
+            return;   // 未授权不启用
+          }
+        }
+      } catch (e) { /* 权限查询失败不阻塞开启（Web 端无此插件） */ }
+    }
     cfg.enabled = !cfg.enabled;
     this.saveProactive();
     this.refreshProactiveUi();

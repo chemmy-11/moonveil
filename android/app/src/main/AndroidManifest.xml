@@ -45,4 +45,6 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- 语音输入（issue #38）：getUserMedia 录音，WebView 弹系统授权对话框 -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- 主动消息本地通知（issue #41）：Android 13+ 运行时权限，未声明则 requestPermissions 静默失败 -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
